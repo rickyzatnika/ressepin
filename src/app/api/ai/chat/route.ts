@@ -84,8 +84,11 @@ async function fetchRecipeImages(names: string[]): Promise<Record<string, string
   if (!TAVILY_API_KEY || names.length === 0) return {};
 
   const result: Record<string, string> = {};
+  const FALLBACK_IMAGE = "/my-resep.jpg";
 
   for (const name of names.slice(0, 3)) {
+    let imageUrl: string | null = null;
+
     try {
       const res = await fetch("https://api.tavily.com/search", {
         method: "POST",
@@ -100,31 +103,40 @@ async function fetchRecipeImages(names: string[]): Promise<Record<string, string
         signal: AbortSignal.timeout(6000),
       });
 
-      if (!res.ok) continue;
+      if (!res.ok) {
+        result[name] = FALLBACK_IMAGE;
+        continue;
+      }
 
       const data = await res.json();
 
       // Try images array first
       if (data.images && data.images.length > 0) {
-        result[name] = data.images[0];
-        continue;
+        imageUrl = data.images[0];
       }
 
       // Fallback: try OG image from first result URL
-      if (data.results && data.results.length > 0) {
+      if (!imageUrl && data.results && data.results.length > 0) {
         const url = data.results[0].url;
         if (url) {
-          const pageRes = await fetch(url, { signal: AbortSignal.timeout(4000) });
-          const html = await pageRes.text();
-          const ogMatch = html.match(/<meta[^>]+property=["']og:image["'][^>]+content=["']([^"']+)["']/i);
-          if (ogMatch) {
-            result[name] = ogMatch[1];
+          try {
+            const pageRes = await fetch(url, { signal: AbortSignal.timeout(4000) });
+            const html = await pageRes.text();
+            const ogMatch = html.match(/<meta[^>]+property=["']og:image["'][^>]+content=["']([^"']+)["']/i);
+            if (ogMatch) {
+              imageUrl = ogMatch[1];
+            }
+          } catch {
+            // Ignore page fetch errors
           }
         }
       }
     } catch {
-      // Silently fail, recipe will just have no image
+      // Silently fail, will use fallback
     }
+
+    // Use found image or fallback
+    result[name] = imageUrl || FALLBACK_IMAGE;
   }
 
   return result;

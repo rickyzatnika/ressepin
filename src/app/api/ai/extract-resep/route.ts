@@ -27,7 +27,7 @@ export async function POST(req: NextRequest) {
       const transcript = await fetchTranscript(videoId);
       rawText = transcript.rawText;
     } catch {
-      rawText = await transcribeWithGroqFallback(url);
+      rawText = "";
     }
 
     // Also fetch video description for structured recipe info
@@ -37,9 +37,26 @@ export async function POST(req: NextRequest) {
       // description stays empty, not critical
     }
 
+    if (!rawText && !description) {
+      throw new Error("Video tidak punya captions dan deskripsi tidak bisa diambil. Coba video lain atau tambahkan resep manual.");
+    }
+
     const resep = await extractResepFromText(description, rawText);
 
-    const thumbnail = `https://img.youtube.com/vi/${videoId}/maxresdefault.jpg`;
+    // Try YouTube maxres thumbnail first, fallback to local image
+    let thumbnail = `https://img.youtube.com/vi/${videoId}/maxresdefault.jpg`;
+    
+    // Check if thumbnail exists and isn't the default placeholder (placeholder is ~2-3KB)
+    try {
+      const thumbRes = await fetch(thumbnail, { method: "HEAD", signal: AbortSignal.timeout(3000) });
+      const contentLength = thumbRes.headers.get("content-length");
+      const isPlaceholder = contentLength && parseInt(contentLength) < 5000; // placeholder images are tiny
+      if (!thumbRes.ok || isPlaceholder) {
+        thumbnail = "/my-resep.jpg";
+      }
+    } catch {
+      thumbnail = "/my-resep.jpg";
+    }
 
     return NextResponse.json({ ...resep, foto: thumbnail, youtubeUrl: url });
   } catch (err: any) {
@@ -187,78 +204,21 @@ async function fetchVideoDescription(videoId: string): Promise<string> {
   return "";
 }
 
-async function transcribeWithGroqFallback(url: string): Promise<string> {
-  console.log("[AI] Falling back to Groq Whisper transcription...");
-
-  const { execFile } = require("child_process");
-  const fs = require("fs");
-  const path = require("path");
-  const os = require("os");
-
-  // Check if yt-dlp is available (local dev only)
-  const YT_DLP = process.platform === "win32" ? "yt-dlp.exe" : "yt-dlp";
-  try {
-    await new Promise((resolve, reject) => {
-      execFile(YT_DLP, ["--version"], { timeout: 5000 }, (err: any, stdout: string) => {
-        if (err) reject(err);
-        else resolve(stdout);
-      });
-    });
-  } catch {
-    throw new Error(
-      "Video tidak punya captions. Fitur transkripsi otomatis hanya tersedia di server dengan yt-dlp. " +
-      "Coba video lain yang punya captions atau tambahkan captions manual."
-    );
-  }
-
-  const tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), "resepin-"));
-  try {
-    const audioPath = path.join(tmpDir, "audio.mp3");
-    await new Promise((resolve, reject) => {
-      execFile(YT_DLP, [
-        "-f", "bestaudio", "-x", "--audio-format", "mp3", "--audio-quality", "0",
-        "-o", audioPath, "--no-playlist", "--no-warnings", url,
-      ], { timeout: 300000 }, (err: any) => err ? reject(err) : resolve(undefined));
-    });
-
-    if (!fs.existsSync(audioPath)) throw new Error("Audio file not found");
-    const audioBuf = fs.readFileSync(audioPath);
-    const blob = new Blob([audioBuf], { type: "audio/mpeg" });
-
-    const form = new FormData();
-    form.append("file", blob, "audio.mp3");
-    form.append("model", "whisper-large-v3");
-    form.append("response_format", "verbose_json");
-    form.append("language", "id");
-
-    const res = await fetch("https://api.groq.com/openai/v1/audio/transcriptions", {
-      method: "POST",
-      headers: { Authorization: `Bearer ${GROQ_API_KEY}` },
-      body: form,
-      signal: AbortSignal.timeout(120000),
-    });
-
-    if (!res.ok) throw new Error(`Whisper API error: ${res.status}`);
-
-    const data = await res.json();
-    const segments = (data.segments || []).map((s: any) => s.text).filter(Boolean);
-    return segments.join(" ") || data.text || "";
-  } finally {
-    fs.rmSync(tmpDir, { recursive: true, force: true });
-  }
-}
-
 async function extractResepFromText(description: string, transcript: string) {
   const descSection = description
     ? `[DESKRIPSI VIDEO YOUTUBE (prioritas utama - ini sudah dalam Bahasa Indonesia, gunakan untuk bahan & jumlah)]\n${description}\n`
     : "";
+
+  const transcriptSection = transcript
+    ? `[TRANSCRIPT VIDEO (gunakan untuk langkah memasak)]\n${transcript.slice(0, 6000)}`
+    : "[TRANSCRIPT VIDEO: tidak tersedia - gunakan deskripsi untuk langkah memasak juga]";
 
   const prompt = `Extract resep masakan dari data berikut. Kembalikan JSON valid.
 
 ATURAN:
 - Output SEMUA dalam Bahasa Indonesia.
 - PRIORITAS UTAMA: data dari "DESKRIPSI VIDEO" — biasanya berisi daftar bahan LENGKAP dengan jumlah persis (gram, sendok, butir, ml, dll).
-- Gunakan transcript hanya sebagai referensi tambahan untuk langkah memasak.
+- Jika transcript tidak tersedia, gunakan DESKRIPSI VIDEO untuk bahan DAN langkah memasak.
 - Untuk setiap bahan, extract jumlah dan satuan PERSIS seperti yang tertulis. Contoh: "2 sdm maizena" → {"nama": "maizena", "jumlah": 2, "satuan": "sdm"}
 - Jika jumlah tidak disebut, set "jumlah": 0 dan "satuan": "".
 - "durasi" = total waktu masak dalam menit.
@@ -291,7 +251,7 @@ Kembalikan JSON SAJA:
 }
 
 ${descSection}
-[TRANSCRIPT VIDEO (gunakan untuk langkah memasak)]\n${transcript.slice(0, 6000)}`;
+${transcriptSection}`;
 
   const res = await fetch("https://api.groq.com/openai/v1/chat/completions", {
     method: "POST",
