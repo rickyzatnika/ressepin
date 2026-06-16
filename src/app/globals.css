@@ -1,0 +1,24 @@
+@import "tailwindcss";
+
+@theme {
+  --color-coral: #E85D3A;
+  --color-coral-dark: #D04D2C;
+  --color-coral-light: #FEF2F0;
+  --color-sage: #84A98C;
+  --color-sage-dark: #6B8F73;
+  --color-sage-light: #F0F7F1;
+  --font-sans: var(--font-sans);
+}
+
+* {
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+.pb-safe {
+  padding-bottom: max(1rem, env(safe-area-inset-bottom));
+}
+
+input[type="checkbox"] {
+  accent-color: #E85D3A;
+}
