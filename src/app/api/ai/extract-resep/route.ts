@@ -16,53 +16,163 @@ export async function POST(req: NextRequest) {
 
   try {
     const videoId = extractVideoId(url);
-    if (!videoId) {
-      return NextResponse.json({ error: "Invalid YouTube URL" }, { status: 400 });
+
+    if (videoId) {
+      return await handleYouTube(videoId, url);
     }
 
-    let rawText: string;
-    let description = "";
-
-    try {
-      const transcript = await fetchTranscript(videoId);
-      rawText = transcript.rawText;
-    } catch {
-      rawText = "";
-    }
-
-    // Also fetch video description for structured recipe info
-    try {
-      description = await fetchVideoDescription(videoId);
-    } catch {
-      // description stays empty, not critical
-    }
-
-    if (!rawText && !description) {
-      throw new Error("Video tidak punya captions dan deskripsi tidak bisa diambil. Coba video lain atau tambahkan resep manual.");
-    }
-
-    const resep = await extractResepFromText(description, rawText);
-
-    // Try YouTube maxres thumbnail first, fallback to local image
-    let thumbnail = `https://img.youtube.com/vi/${videoId}/maxresdefault.jpg`;
-    
-    // Check if thumbnail exists and isn't the default placeholder (placeholder is ~2-3KB)
-    try {
-      const thumbRes = await fetch(thumbnail, { method: "HEAD", signal: AbortSignal.timeout(3000) });
-      const contentLength = thumbRes.headers.get("content-length");
-      const isPlaceholder = contentLength && parseInt(contentLength) < 5000; // placeholder images are tiny
-      if (!thumbRes.ok || isPlaceholder) {
-        thumbnail = "/my-resep.jpg";
-      }
-    } catch {
-      thumbnail = "/my-resep.jpg";
-    }
-
-    return NextResponse.json({ ...resep, foto: thumbnail, youtubeUrl: url });
+    return await handleGeneralUrl(url);
   } catch (err: any) {
     console.error("[AI] Extract error:", err.message);
     return NextResponse.json({ error: err.message }, { status: 500 });
   }
+}
+
+async function handleYouTube(videoId: string, originalUrl: string) {
+  let rawText: string;
+  let description = "";
+
+  try {
+    const transcript = await fetchTranscript(videoId);
+    rawText = transcript.rawText;
+  } catch {
+    rawText = "";
+  }
+
+  try {
+    description = await fetchVideoDescription(videoId);
+  } catch {
+    // description stays empty, not critical
+  }
+
+  if (!rawText && !description) {
+    throw new Error("Video tidak punya captions dan deskripsi tidak bisa diambil. Coba video lain atau tambahkan resep manual.");
+  }
+
+  const resep = await extractResepFromText(description, rawText, "youtube");
+
+  // Try YouTube maxres thumbnail first, fallback to local image
+  let thumbnail = `https://img.youtube.com/vi/${videoId}/maxresdefault.jpg`;
+  
+  try {
+    const thumbRes = await fetch(thumbnail, { method: "HEAD", signal: AbortSignal.timeout(3000) });
+    const contentLength = thumbRes.headers.get("content-length");
+    const isPlaceholder = contentLength && parseInt(contentLength) < 5000;
+    if (!thumbRes.ok || isPlaceholder) {
+      thumbnail = "/my-resep.jpg";
+    }
+  } catch {
+    thumbnail = "/my-resep.jpg";
+  }
+
+  return NextResponse.json({ ...resep, foto: thumbnail, youtubeUrl: originalUrl });
+}
+
+async function handleGeneralUrl(url: string) {
+  let html: string;
+  try {
+    const res = await fetch(url, {
+      signal: AbortSignal.timeout(15000),
+      headers: {
+        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
+        "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
+        "Accept-Language": "id-ID,id;q=0.9,en;q=0.8",
+      },
+    });
+    if (!res.ok) {
+      throw new Error(`Gagal mengakses halaman (HTTP ${res.status})`);
+    }
+    html = await res.text();
+    if (!html || html.length < 100) {
+      throw new Error("Halaman tidak memiliki konten yang cukup");
+    }
+  } catch (e: any) {
+    if (e.message?.includes("Gagal")) throw e;
+    throw new Error(`Tidak bisa mengakses halaman tersebut. Pastikan URL benar dan bisa diakses publik.`);
+  }
+
+  // Extract JSON-LD recipe data if available
+  let jsonLdRecipe: any = null;
+  const ldMatch = html.match(/<script[^>]*type=["']application\/ld\+json["'][^>]*>([\s\S]*?)<\/script>/gi);
+  if (ldMatch) {
+    for (const block of ldMatch) {
+      try {
+        const content = block.replace(/<\/?script[^>]*>/gi, "").trim();
+        const parsed = JSON.parse(content);
+        const recipes = findRecipeInJsonLd(parsed);
+        if (recipes) {
+          jsonLdRecipe = recipes;
+          break;
+        }
+      } catch {}
+    }
+  }
+
+  // Extract page text content (strip HTML)
+  const pageText = extractPageText(html).slice(0, 8000);
+
+  const resep = await extractResepFromText(jsonLdRecipe ? JSON.stringify(jsonLdRecipe) : "", pageText, "general");
+
+  // Try to find an OG image
+  let foto = "/my-resep.jpg";
+  const ogMatch = html.match(/<meta[^>]+property=["']og:image["'][^>]+content=["']([^"']+)["']/i);
+  if (ogMatch) foto = ogMatch[1];
+
+  return NextResponse.json({ ...resep, foto, youtubeUrl: undefined });
+}
+
+function findRecipeInJsonLd(data: any): any | null {
+  if (!data) return null;
+
+  // Direct @type: Recipe
+  if (data["@type"] === "Recipe" || data["@type"]?.includes?.("Recipe")) {
+    return data;
+  }
+
+  // @graph array
+  if (data["@graph"] && Array.isArray(data["@graph"])) {
+    for (const item of data["@graph"]) {
+      const found = findRecipeInJsonLd(item);
+      if (found) return found;
+    }
+  }
+
+  // itemListElement
+  if (data.itemListElement && Array.isArray(data.itemListElement)) {
+    for (const item of data.itemListElement) {
+      const found = findRecipeInJsonLd(item);
+      if (found) return found;
+    }
+  }
+
+  // mainEntity
+  if (data.mainEntity) {
+    return findRecipeInJsonLd(data.mainEntity);
+  }
+
+  return null;
+}
+
+function extractPageText(html: string): string {
+  // Remove script and style tags
+  let text = html.replace(/<script[\s\S]*?<\/script>/gi, " ");
+  text = text.replace(/<style[\s\S]*?<\/style>/gi, " ");
+  
+  // Remove all HTML tags
+  text = text.replace(/<[^>]+>/g, " ");
+  
+  // Decode common HTML entities
+  text = text.replace(/&amp;/g, "&");
+  text = text.replace(/&lt;/g, "<");
+  text = text.replace(/&gt;/g, ">");
+  text = text.replace(/&quot;/g, '"');
+  text = text.replace(/&#39;/g, "'");
+  text = text.replace(/&nbsp;/g, " ");
+  
+  // Collapse whitespace
+  text = text.replace(/\s+/g, " ").trim();
+  
+  return text;
 }
 
 function extractVideoId(url: string): string | null {
@@ -204,38 +314,40 @@ async function fetchVideoDescription(videoId: string): Promise<string> {
   return "";
 }
 
-async function extractResepFromText(description: string, transcript: string) {
-  const descSection = description
-    ? `[DESKRIPSI VIDEO YOUTUBE (prioritas utama - ini sudah dalam Bahasa Indonesia, gunakan untuk bahan & jumlah)]\n${description}\n`
+async function extractResepFromText(structured: string, rawText: string, source: "youtube" | "general") {
+  const isYoutube = source === "youtube";
+
+  const descSection = structured
+    ? `[${isYoutube ? "DESKRIPSI VIDEO YOUTUBE (prioritas utama - gunakan untuk bahan & jumlah)" : "STRUKTUR DATA RESEP (JSON-LD / metadata dari halaman - prioritas utama untuk bahan & jumlah)"}]\n${structured}\n`
     : "";
 
-  const transcriptSection = transcript
-    ? `[TRANSCRIPT VIDEO (gunakan untuk langkah memasak)]\n${transcript.slice(0, 6000)}`
-    : "[TRANSCRIPT VIDEO: tidak tersedia - gunakan deskripsi untuk langkah memasak juga]";
+  const textSection = rawText
+    ? `[${isYoutube ? "TRANSCRIPT VIDEO (gunakan untuk langkah memasak)" : "KONTEN HALAMAN (teks dari halaman web - gunakan untuk langkah memasak & detail resep)"}]\n${rawText.slice(0, 6000)}`
+    : `[${isYoutube ? "TRANSCRIPT VIDEO: tidak tersedia - gunakan deskripsi untuk langkah memasak juga" : "KONTEN HALAMAN: tidak tersedia - gunakan data terstruktur saja"}]\n`;
 
   const prompt = `Extract resep masakan dari data berikut. Kembalikan JSON valid.
 
 ATURAN:
 - Output SEMUA dalam Bahasa Indonesia.
-- PRIORITAS UTAMA: data dari "DESKRIPSI VIDEO" — biasanya berisi daftar bahan LENGKAP dengan jumlah persis (gram, sendok, butir, ml, dll).
-- Jika transcript tidak tersedia, gunakan DESKRIPSI VIDEO untuk bahan DAN langkah memasak.
+- PRIORITAS UTAMA: data dari "STRUKTUR DATA" atau "DESKRIPSI VIDEO" — biasanya berisi daftar bahan LENGKAP dengan jumlah persis (gram, sendok, butir, ml, dll).
+${isYoutube ? "- Gunakan TRANSCRIPT VIDEO untuk langkah memasak." : "- Gunakan KONTEN HALAMAN untuk langkah memasak dan menentukan judul resep."}
+- Jika data utama tidak tersedia, ekstrak dari teks yang ada.
 - Untuk setiap bahan, extract jumlah dan satuan PERSIS seperti yang tertulis. Contoh: "2 sdm maizena" → {"nama": "maizena", "jumlah": 2, "satuan": "sdm"}
 - Jika jumlah tidak disebut, set "jumlah": 0 dan "satuan": "".
 - "durasi" = total waktu masak dalam menit.
 - "tingkatKesulitan": "Mudah" | "Sedang" | "Sulit".
-- "tips": tips masak dari video.
-- TERJEMAHKAN semua bahan, langkah, dan nama resep ke Bahasa Indonesia, meskipun teks aslinya dalam bahasa asing (Jerman, Inggris, Albania, dll).
+- "tips": tips masak.
+- TERJEMAHKAN semua bahan, langkah, dan nama resep ke Bahasa Indonesia, meskipun teks aslinya dalam bahasa asing.
 - JANGAN gunakan bahasa asing untuk nama bahan atau langkah — SEMUA harus Bahasa Indonesia.
-  Contoh: "Kartoffeln" → "kentang", "Eier" → "telur", "Mehl" → "tepung"
 
 KLASIFIKASI KATEGORI:
 Tentukan kategori yang sesuai berdasarkan jenis masakan:
-- "Masakan Tradisional" untuk masakan Indonesia tradisional, nusantara, atau kuliner lokal (sub: ayam, rendang, soto, gulai, sambal, nasi, mie, dll)
-- "Masakan Modern" untuk masakan western, asian fusion, korean, japanese, italian, dll (sub: pasta, pizza, steak, salad, western, korean, japanese, chinese, dll)
-- "Dessert" untuk makanan manis penutup (sub: cake, puding, eskrim, brownies, kolak, dll)
-- "Minuman" untuk minuman (sub: jus, kopi, teh, smoothie, wedang, dll)
+- "Masakan Tradisional" untuk masakan Indonesia tradisional, nusantara, atau kuliner lokal
+- "Masakan Modern" untuk masakan western, asian fusion, korean, japanese, italian, dll
+- "Dessert" untuk makanan manis penutup
+- "Minuman" untuk minuman
 
-WAJIB: isi "kategori" dengan label konteks utama (salah satu dari 4 di atas) PLUS sub-kategori yang relevan dari daftar di atas. Contoh: ["Masakan Tradisional", "ayam", "gulai", "pedas"]
+WAJIB: isi "kategori" dengan label konteks utama PLUS sub-kategori yang relevan.
 
 Kembalikan JSON SAJA:
 {
@@ -247,11 +359,11 @@ Kembalikan JSON SAJA:
   ],
   "langkah": ["Langkah 1", "Langkah 2"],
   "tips": "Tips memasak",
-  "kategori": ["Masakan Tradisional", "ayam", "gulai"]
+  "kategori": ["Masakan Tradisional"]
 }
 
 ${descSection}
-${transcriptSection}`;
+${textSection}`;
 
   const res = await fetch("https://api.groq.com/openai/v1/chat/completions", {
     method: "POST",

@@ -62,7 +62,7 @@ export default function ResepPage() {
       <div className="mb-6 flex items-center justify-between">
         <div>
           <h1 className="text-2xl font-bold tracking-tight">Resep</h1>
-          <p className="mt-0.5 text-sm text-stone-400">
+          <p className="mt-0.5 text-sm text-stone-400 dark:text-stone-400">
             {resepList?.length || 0} resep tersimpan
           </p>
         </div>
@@ -77,12 +77,12 @@ export default function ResepPage() {
 
       {/* Search bar */}
       <div className="relative mb-3">
-        <Search className="pointer-events-none absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-stone-400" />
+        <Search className="pointer-events-none absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-stone-400 dark:text-stone-400" />
         <input
           value={search}
           onChange={(e) => setSearch(e.target.value)}
           placeholder="Cari resep..."
-          className="w-full rounded-2xl border border-stone-200 bg-white py-2.5 pl-10 pr-4 text-sm outline-none transition-colors focus:border-coral"
+          className="w-full rounded-2xl border border-stone-200 bg-white py-2.5 pl-10 pr-4 text-sm outline-none transition-colors focus:border-coral dark:border-stone-700 dark:bg-stone-800"
         />
       </div>
 
@@ -93,21 +93,21 @@ export default function ResepPage() {
           className={`inline-flex items-center gap-1.5 rounded-xl px-3 py-1.5 text-xs font-medium transition-colors ${
             showBisaDimasak
               ? "bg-coral text-white"
-              : "bg-white text-stone-500 ring-1 ring-stone-200 hover:ring-coral"
+              : "bg-white text-stone-500 ring-1 ring-stone-200 hover:ring-coral dark:bg-stone-800 dark:text-stone-300 dark:ring-stone-700"
           }`}
         >
           <Utensils className="h-3.5 w-3.5" />
           Bisa Dimasak
         </button>
 
-        <div className="h-4 w-px bg-stone-200" />
+        <div className="h-4 w-px bg-stone-200 dark:bg-stone-700" />
 
         <button
           onClick={() => setFilterCategory("")}
           className={`rounded-xl px-3 py-1.5 text-xs font-medium transition-colors ${
             !filterCategory
               ? "bg-coral text-white shadow-sm"
-              : "bg-white text-stone-500 ring-1 ring-stone-200 hover:ring-coral"
+              : "bg-white text-stone-500 ring-1 ring-stone-200 hover:ring-coral dark:bg-stone-800 dark:text-stone-300 dark:ring-stone-700"
           }`}
         >
           Semua
@@ -120,7 +120,7 @@ export default function ResepPage() {
             className={`inline-flex items-center gap-1 rounded-xl px-3 py-1.5 text-xs font-medium transition-colors ${
               filterCategory === ctx.label
                 ? "bg-sage text-white"
-                : "bg-white text-stone-500 ring-1 ring-stone-200 hover:ring-sage"
+                : "bg-white text-stone-500 ring-1 ring-stone-200 hover:ring-sage dark:bg-stone-800 dark:text-stone-300 dark:ring-stone-700"
             }`}
           >
             <span>{ctx.icon}</span>
@@ -144,15 +144,15 @@ export default function ResepPage() {
         </div>
       ) : filtered.length === 0 ? (
         <div className="flex flex-col items-center py-24">
-          <div className="mb-5 flex h-20 w-20 items-center justify-center rounded-[24px] bg-stone-100">
-            <ChefHat className="h-9 w-9 text-stone-300" />
+          <div className="mb-5 flex h-20 w-20 items-center justify-center rounded-[24px] bg-stone-100 dark:bg-stone-700">
+            <ChefHat className="h-9 w-9 text-stone-300 dark:text-stone-500" />
           </div>
           <p className="mb-1 text-base font-semibold">
             {search || filterCategory || showBisaDimasak
               ? "Tidak ada hasil"
               : "Belum ada resep"}
           </p>
-          <p className="mb-8 max-w-xs text-center text-sm text-stone-400">
+          <p className="mb-8 max-w-xs text-center text-sm text-stone-400 dark:text-stone-400">
             {search || filterCategory || showBisaDimasak
               ? "Coba ubah kata kunci atau filter."
               : "Tambahkan resep pertamamu, atau paste link YouTube untuk ekstrak otomatis."}
@@ -168,17 +168,17 @@ export default function ResepPage() {
         <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4">
           {filtered.map((resep) => (
             <Link key={resep._id} href={`/resep/${resep._id}`}>
-              <div className="overflow-hidden rounded-2xl bg-white shadow-sm ring-1 ring-stone-100 transition-shadow hover:shadow-md active:scale-[0.98]">
-                <div className="flex aspect-[4/3] items-center justify-center bg-gradient-to-br from-stone-100 to-stone-50">
+              <div className="overflow-hidden rounded-2xl bg-white shadow-sm ring-1 ring-stone-100 transition-shadow hover:shadow-md active:scale-[0.98] dark:bg-stone-800 dark:ring-stone-700">
+                <div className="flex aspect-[4/3] items-center justify-center bg-gradient-to-br from-stone-100 to-stone-50 dark:from-stone-800 dark:to-stone-900">
                   {resep.foto ? (
                     <img src={resep.foto} alt="" className="h-full w-full object-cover" />
                   ) : (
-                    <ChefHat className="h-9 w-9 text-stone-200" />
+                    <ChefHat className="h-9 w-9 text-stone-200 dark:text-stone-600" />
                   )}
                 </div>
                 <div className="p-3">
                   <p className="truncate text-sm font-semibold">{resep.name}</p>
-                  <div className="mt-1.5 flex items-center gap-3 text-xs text-stone-400">
+                  <div className="mt-1.5 flex items-center gap-3 text-xs text-stone-400 dark:text-stone-400">
                     <span className="inline-flex items-center gap-1">
                       <Clock className="h-3 w-3" />
                       {resep.durasi || "?"}m

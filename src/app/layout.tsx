@@ -31,8 +31,15 @@ export default function RootLayout({
   children: React.ReactNode;
 }) {
   return (
-    <html lang="id" className={`${geist.variable} font-sans`}>
-      <body className="bg-stone-50 text-stone-900 antialiased">
+    <html lang="id" className={`${geist.variable} font-sans`} suppressHydrationWarning>
+      <head>
+        <script
+          dangerouslySetInnerHTML={{
+            __html: `try{let t=localStorage.getItem("resepin_theme");if(t==="dark"||(!t&&matchMedia("(prefers-color-scheme:dark)").matches))document.documentElement.classList.add("dark")}catch(e){}`,
+          }}
+        />
+      </head>
+      <body className="bg-stone-50 text-stone-900 antialiased dark:bg-stone-950 dark:text-stone-100">
         <Providers>{children}</Providers>
       </body>
     </html>

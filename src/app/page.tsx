@@ -3,7 +3,7 @@
 import { useSession, signIn } from "next-auth/react";
 import { useRouter } from "next/navigation";
 import { useEffect } from "react";
-import { ChefHat, Package, Sparkles } from "lucide-react";
+import { ChefHat, Package, Sparkles, ClipboardList } from "lucide-react";
 
 export default function Home() {
   const { data: session, status } = useSession();
@@ -29,16 +29,16 @@ export default function Home() {
         </div>
 
         <h1 className="mb-2 text-4xl font-bold tracking-tight">ResepIn</h1>
-        <p className="mb-1 text-center text-stone-500">
+        <p className="mb-1 text-center text-stone-500 dark:text-stone-400">
           Bingung mau masak apa hari ini?
         </p>
-        <p className="mb-10 text-center text-sm text-stone-400">
-          Simpan resep, kelola stok dapur, ekstrak dari YouTube.
+        <p className="mb-10 text-center text-sm text-stone-400 dark:text-stone-400">
+          AI Chef yang bikin resep dari bahan dapurmu. Ekstrak YouTube. Atur stok. Rencanakan menu mingguan.
         </p>
 
         <button
           onClick={() => signIn("google", { redirectTo: "/dashboard" })}
-          className="flex w-full max-w-xs items-center justify-center gap-3 rounded-2xl border border-stone-200 bg-white px-8 py-3.5 font-semibold text-stone-700 shadow-sm transition-all hover:shadow-md active:scale-[0.98]"
+          className="flex w-full max-w-xs items-center justify-center gap-3 rounded-2xl border border-stone-200 bg-white px-8 py-3.5 font-semibold text-stone-700 shadow-sm transition-all hover:shadow-md active:scale-[0.98] dark:border-stone-700 dark:bg-stone-800 dark:text-stone-200"
         >
           <svg className="h-5 w-5 shrink-0" viewBox="0 0 24 24">
             <path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92a5.06 5.06 0 0 1-2.2 3.32v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.1z" fill="#4285F4" />
@@ -50,19 +50,19 @@ export default function Home() {
         </button>
       </div>
 
-      <div className="border-t border-stone-100 bg-white px-8 py-6">
-        <div className="mx-auto flex max-w-xs items-center justify-between text-center text-xs text-stone-400">
+      <div className="border-t border-stone-100 bg-white px-8 py-6 dark:border-stone-700 dark:bg-stone-800">
+        <div className="mx-auto flex max-w-xs items-center justify-between text-center text-xs text-stone-400 dark:text-stone-400">
           <div className="flex flex-col items-center gap-1.5">
-            <ChefHat className="h-5 w-5 text-coral" />
-            Simpan Resep
+            <Sparkles className="h-5 w-5 text-coral" />
+            AI Chef Pintar
           </div>
           <div className="flex flex-col items-center gap-1.5">
             <Package className="h-5 w-5 text-sage" />
             Atur Stok
           </div>
           <div className="flex flex-col items-center gap-1.5">
-            <Sparkles className="h-5 w-5 text-coral" />
-            AI YouTube
+            <ClipboardList className="h-5 w-5 text-coral" />
+            Meal Planner
           </div>
         </div>
       </div>

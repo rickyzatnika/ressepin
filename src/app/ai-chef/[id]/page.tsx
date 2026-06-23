@@ -18,12 +18,20 @@ import {
   Plus,
   Check,
   Package,
+  Pencil,
+  X,
 } from "lucide-react";
 
 const YOUTUBE_REGEX = /(?:youtube\.com\/watch\?v=|youtu\.be\/)([a-zA-Z0-9_-]{11})/;
 function extractVideoId(text: string): string | null {
   const m = text.match(YOUTUBE_REGEX);
   return m ? m[1] : null;
+}
+
+const URL_REGEX = /https?:\/\/[^\s]+/;
+function extractUrl(text: string): string | null {
+  const m = text.match(URL_REGEX);
+  return m ? m[0] : null;
 }
 
 function TypewriterText({ text }: { text: string }) {
@@ -75,13 +83,18 @@ export default function ChatDetailPage() {
   const createStok = useMutation(api.stok.create);
   const sendMessage = useMutation(api.messages.send);
   const updateTitle = useMutation(api.conversations.updateTitle);
+  const renameConversation = useMutation(api.conversations.updateTitle);
 
+  const conversation = useQuery(api.conversations.getById, conversationId ? { id: conversationId } : "skip");
   const messages = useQuery(api.messages.list, conversationId ? { conversationId } : "skip");
 
   const [input, setInput] = useState("");
   const [sending, setSending] = useState(false);
   const [saving, setSaving] = useState<string | null>(null);
   const [addingStok, setAddingStok] = useState<string | null>(null);
+  const [editingTitle, setEditingTitle] = useState(false);
+  const [editTitleValue, setEditTitleValue] = useState("");
+  const titleInputRef = useRef<HTMLInputElement>(null);
   const messagesContainerRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
   const promptSentRef = useRef(false);
@@ -97,30 +110,31 @@ export default function ChatDetailPage() {
     (async () => {
       await sendMessage({ conversationId, userId: session.user.id, role: "user", content: prompt });
       updateTitle({ id: conversationId, title: prompt.slice(0, 60) });
-      const videoId = prompt.match(/(?:youtube\.com\/watch\?v=|youtu\.be\/)([a-zA-Z0-9_-]{11})/)?.[1];
-      if (videoId) {
+      const firstUrl = extractUrl(prompt);
+      if (firstUrl) {
         await sendMessage({
           conversationId, userId: session.user.id, role: "assistant",
-          content: "🔍 Lagi extract resep dari video YouTube...",
+          content: "🔍 Lagi extract resep dari link...",
         });
         try {
           const res = await fetch("/api/ai/extract-resep", {
             method: "POST",
             headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ url: prompt, userId: session.user.id }),
+            body: JSON.stringify({ url: firstUrl, userId: session.user.id }),
           });
           if (res.ok) {
             const data = await res.json();
+            const source = data.youtubeUrl ? "video YouTube" : "halaman web";
             await sendMessage({
               conversationId, userId: session.user.id, role: "assistant",
-              content: `✅ Berhasil extract resep **${data.name}**!\n\n${data.bahan?.length || 0} bahan, ${data.langkah?.length || 0} langkah.`,
+              content: `✅ Berhasil extract resep dari ${source} **${data.name}**!\n\n${data.bahan?.length || 0} bahan, ${data.langkah?.length || 0} langkah.`,
               resep: data,
             });
           } else {
             const err = await res.json().catch(() => ({ error: "Gagal extract" }));
             await sendMessage({
               conversationId, userId: session.user.id, role: "assistant",
-              content: `❌ ${err.error || "Gagal extract resep dari video."}`,
+              content: `❌ ${err.error || "Gagal extract resep dari link."}`,
             });
           }
         } catch {
@@ -202,31 +216,33 @@ export default function ChatDetailPage() {
       updateTitle({ id: conversationId, title: text.slice(0, 60) });
     }
 
-    const videoId = extractVideoId(text);
+    const firstUrl = extractUrl(text);
 
-    if (videoId) {
+    if (firstUrl) {
+      const isYoutube = extractVideoId(firstUrl);
       await sendMessage({
         conversationId, userId: session.user.id, role: "assistant",
-        content: "🔍 Lagi extract resep dari video YouTube...",
+        content: isYoutube ? "🔍 Lagi extract resep dari video YouTube..." : "🔍 Lagi extract resep dari halaman web...",
       });
       try {
         const res = await fetch("/api/ai/extract-resep", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ url: text, userId: session.user.id }),
+          body: JSON.stringify({ url: firstUrl, userId: session.user.id }),
         });
         if (res.ok) {
           const data = await res.json();
+          const source = data.youtubeUrl ? "video YouTube" : "halaman web";
           await sendMessage({
             conversationId, userId: session.user.id, role: "assistant",
-            content: `✅ Berhasil extract resep **${data.name}**!\n\n${data.bahan?.length || 0} bahan, ${data.langkah?.length || 0} langkah.`,
+            content: `✅ Berhasil extract resep dari ${source} **${data.name}**!\n\n${data.bahan?.length || 0} bahan, ${data.langkah?.length || 0} langkah.`,
             resep: data,
           });
         } else {
           const err = await res.json().catch(() => ({ error: "Gagal extract" }));
           await sendMessage({
             conversationId, userId: session.user.id, role: "assistant",
-            content: `❌ ${err.error || "Gagal extract resep dari video."}`,
+            content: `❌ ${err.error || "Gagal extract resep dari link."}`,
           });
         }
       } catch {
@@ -331,14 +347,46 @@ export default function ChatDetailPage() {
     <div className="mx-auto flex max-w-2xl flex-col px-4 sm:px-6 lg:px-8 pt-4" style={{ height: "calc(100dvh - 5rem)" }}>
       {/* Header */}
       <div className="mb-3 flex items-center gap-2">
-        <button onClick={() => router.push("/ai-chef")} className="flex h-9 w-9 items-center justify-center rounded-xl text-stone-400 hover:bg-stone-100 hover:text-stone-600">
+        <button onClick={() => router.push("/ai-chef")} className="flex h-9 w-9 items-center justify-center rounded-xl text-stone-400 hover:bg-stone-100 hover:text-stone-600 dark:text-stone-400 dark:hover:bg-stone-700 dark:hover:text-stone-300">
           <ArrowLeft className="h-5 w-5" />
         </button>
         <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-gradient-to-br from-coral to-orange-500">
           <Sparkles className="h-4 w-4 text-white" />
         </div>
         <div className="min-w-0 flex-1">
-          <h1 className="truncate text-base font-bold tracking-tight">AI Chef</h1>
+          {editingTitle ? (
+            <div className="flex items-center gap-1">
+              <input
+                ref={titleInputRef}
+                value={editTitleValue}
+                onChange={(e) => setEditTitleValue(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter" && editTitleValue.trim()) {
+                    renameConversation({ id: conversationId, title: editTitleValue.trim() });
+                    setEditingTitle(false);
+                  }
+                  if (e.key === "Escape") setEditingTitle(false);
+                }}
+                className="min-w-0 flex-1 rounded-lg border border-stone-200 px-2 py-1 text-sm outline-none focus:border-coral dark:border-stone-700 dark:bg-stone-900"
+              />
+              <button onClick={() => { if (editTitleValue.trim()) { renameConversation({ id: conversationId, title: editTitleValue.trim() }); setEditingTitle(false); } }}
+                className="flex h-7 w-7 items-center justify-center rounded-lg text-sage hover:bg-sage-light">
+                <Check className="h-3.5 w-3.5" />
+              </button>
+              <button onClick={() => setEditingTitle(false)}
+                className="flex h-7 w-7 items-center justify-center rounded-lg text-stone-300 hover:bg-stone-100 dark:text-stone-500 dark:hover:bg-stone-700">
+                <X className="h-3.5 w-3.5" />
+              </button>
+            </div>
+          ) : (
+            <div className="flex items-center gap-1">
+              <h1 className="truncate text-base font-bold tracking-tight">{conversation?.title || "AI Chef"}</h1>
+              <button onClick={() => { setEditTitleValue(conversation?.title || ""); setEditingTitle(true); setTimeout(() => titleInputRef.current?.focus(), 50); }}
+                className="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg text-stone-300 hover:bg-stone-100 hover:text-stone-500 dark:text-stone-500 dark:hover:bg-stone-700 dark:hover:text-stone-300">
+                <Pencil className="h-3.5 w-3.5" />
+              </button>
+            </div>
+          )}
         </div>
       </div>
 
@@ -346,13 +394,13 @@ export default function ChatDetailPage() {
       <div ref={messagesContainerRef} className="flex-1 overflow-y-auto pb-4 space-y-4 scrollbar-thin">
         {!messages ? (
           <div className="flex items-center justify-center py-20">
-            <Loader2 className="h-5 w-5 animate-spin text-stone-300" />
+            <Loader2 className="h-5 w-5 animate-spin text-stone-300 dark:text-stone-500" />
           </div>
         ) : messages.length === 0 ? (
           <div className="flex flex-col items-center py-16 text-center">
             <Bot className="mb-3 h-10 w-10 text-coral" />
-            <p className="text-sm font-medium text-stone-500">Mulai chat dengan AI Chef</p>
-            <p className="text-xs text-stone-300 mt-1">Paste link YouTube atau tanya resep</p>
+            <p className="text-sm font-medium text-stone-500 dark:text-stone-300">Mulai chat dengan AI Chef</p>
+            <p className="text-xs text-stone-300 dark:text-stone-500 mt-1">Paste link resep (YouTube/Cookpad/dll) atau tanya resep</p>
           </div>
         ) : (
           messages.map((msg, i) => {
@@ -365,17 +413,17 @@ export default function ChatDetailPage() {
               <div className={`max-w-[85%] rounded-2xl px-4 py-3 ${
                 msg.role === "user"
                   ? "bg-coral text-white rounded-br-md"
-                  : "bg-white shadow-sm ring-1 ring-stone-100 rounded-bl-md"
+                  : "bg-white shadow-sm ring-1 ring-stone-100 rounded-bl-md dark:bg-stone-800 dark:ring-stone-700"
               }`}>
                 <div className="mb-1 flex items-center gap-1.5">
                   {msg.role === "assistant" ? <Bot className="h-3.5 w-3.5 text-coral" /> : <User className="h-3.5 w-3.5 text-white/70" />}
-                  <span className={`text-[10px] font-medium ${msg.role === "user" ? "text-white/70" : "text-stone-400"}`}>
+                  <span className={`text-[10px] font-medium ${msg.role === "user" ? "text-white/70" : "text-stone-400 dark:text-stone-400"}`}>
                     {msg.role === "assistant" ? "AI Chef" : "Kamu"}
                   </span>
-                  {(msg as any).searched && <span className="text-[10px] text-stone-300">· 🌐</span>}
+                  {(msg as any).searched && <span className="text-[10px] text-stone-300 dark:text-stone-500">· 🌐</span>}
                 </div>
 
-                <div className={`text-sm leading-relaxed ${msg.role === "user" ? "text-white" : "text-stone-700"}`}>
+                <div className={`text-sm leading-relaxed ${msg.role === "user" ? "text-white" : "text-stone-700 dark:text-stone-200"}`}>
                   {msg.role === "assistant" ? (
                     isSingle || isExtracted ? (
                       <ReactMarkdown components={{ strong: ({ children }) => <strong className="font-semibold">{children}</strong>, p: ({ children }) => <p className="mb-1 last:mb-0">{children}</p> }}>
@@ -392,7 +440,7 @@ export default function ChatDetailPage() {
                         h2: ({ children }) => <p className="mt-2 mb-1 text-sm font-bold">{children}</p>,
                         h3: ({ children }) => <p className="mt-1.5 mb-0.5 text-sm font-semibold">{children}</p>,
                         p: ({ children }) => <p className="mb-1 last:mb-0">{children}</p>,
-                        code: ({ children }) => <code className="rounded-md bg-stone-100 px-1.5 py-0.5 text-xs font-mono text-stone-600">{children}</code>,
+                        code: ({ children }) => <code className="rounded-md bg-stone-100 px-1.5 py-0.5 text-xs font-mono text-stone-600 dark:bg-stone-700 dark:text-stone-300">{children}</code>,
                       }}>
                         {msg.content}
                       </ReactMarkdown>
@@ -404,7 +452,7 @@ export default function ChatDetailPage() {
 
                 {/* Recipe card: Single (YouTube) */}
                 {isSingle && (
-                  <div className="mt-3 rounded-xl border border-stone-200 bg-stone-50 p-3">
+                  <div className="mt-3 rounded-xl border border-stone-200 bg-stone-50 p-3 dark:border-stone-700 dark:bg-stone-900">
                     {resepData.foto && (
                       <img src={resepData.foto} alt={resepData.name} className="mb-2 h-32 w-full rounded-lg object-cover" />
                     )}
@@ -414,7 +462,7 @@ export default function ChatDetailPage() {
                         <span className="rounded-lg bg-coral-light px-2 py-0.5 text-[10px] font-medium text-coral-dark">{resepData.durasi} mnt</span>
                       )}
                       <span className="rounded-lg bg-sage-light px-2 py-0.5 text-[10px] font-medium text-sage-dark">{resepData.bahan?.length || 0} bahan</span>
-                      <span className="rounded-lg bg-stone-200 px-2 py-0.5 text-[10px] font-medium text-stone-500">{resepData.langkah?.length || 0} langkah</span>
+                      <span className="rounded-lg bg-stone-200 px-2 py-0.5 text-[10px] font-medium text-stone-500 dark:bg-stone-700 dark:text-stone-300">{resepData.langkah?.length || 0} langkah</span>
                     </div>
                     <div className="flex gap-2">
                       <button onClick={() => handleSaveResep(resepData)} disabled={saving === resepData.name}
@@ -424,7 +472,7 @@ export default function ChatDetailPage() {
                       </button>
                       {resepData.youtubeUrl && (
                         <a href={resepData.youtubeUrl} target="_blank"
-                          className="flex items-center justify-center gap-1.5 rounded-xl border border-stone-200 px-3 py-2 text-xs font-medium text-stone-500 transition-all hover:bg-stone-100">
+                          className="flex items-center justify-center gap-1.5 rounded-xl border border-stone-200 px-3 py-2 text-xs font-medium text-stone-500 transition-all hover:bg-stone-100 dark:border-stone-700 dark:text-stone-300 dark:hover:bg-stone-700">
                           <ExternalLink className="h-3.5 w-3.5" /> Video
                         </a>
                       )}
@@ -438,9 +486,9 @@ export default function ChatDetailPage() {
                     {/* Recipes */}
                     {resepData.recipes?.length > 0 && (
                       <div className="space-y-2">
-                        <p className="text-[11px] font-semibold uppercase tracking-wider text-stone-400">Resep dari AI Chef</p>
+                        <p className="text-[11px] font-semibold uppercase tracking-wider text-stone-400 dark:text-stone-400">Resep dari AI Chef</p>
                         {resepData.recipes.map((r: any, j: number) => (
-                          <div key={j} className="rounded-xl border border-stone-200 bg-stone-50 p-3">
+                          <div key={j} className="rounded-xl border border-stone-200 bg-stone-50 p-3 dark:border-stone-700 dark:bg-stone-900">
                             {r.foto && (
                               <img src={r.foto} alt={r.name} className="mb-2 h-28 w-full rounded-lg object-cover" />
                             )}
@@ -448,7 +496,7 @@ export default function ChatDetailPage() {
                             <div className="mb-2 flex flex-wrap gap-1.5">
                               {r.durasi && <span className="rounded-lg bg-coral-light px-2 py-0.5 text-[10px] font-medium text-coral-dark">{r.durasi} mnt</span>}
                               <span className="rounded-lg bg-sage-light px-2 py-0.5 text-[10px] font-medium text-sage-dark">{r.bahan?.length || 0} bahan</span>
-                              <span className="rounded-lg bg-stone-200 px-2 py-0.5 text-[10px] font-medium text-stone-500">{r.langkah?.length || 0} langkah</span>
+                              <span className="rounded-lg bg-stone-200 px-2 py-0.5 text-[10px] font-medium text-stone-500 dark:bg-stone-700 dark:text-stone-300">{r.langkah?.length || 0} langkah</span>
                             </div>
                             <button onClick={() => handleSaveResep(r)} disabled={saving === r.name}
                               className="flex w-full items-center justify-center gap-1.5 rounded-xl bg-coral py-2 text-xs font-semibold text-white transition-all active:scale-[0.97] disabled:opacity-50">
@@ -462,20 +510,20 @@ export default function ChatDetailPage() {
 
                     {/* Additional ingredients */}
                     {resepData.ingredients?.length > 0 && (
-                      <div className="rounded-xl border border-stone-200 bg-amber-50 p-3">
+                      <div className="rounded-xl border border-stone-200 bg-amber-50 p-3 dark:border-stone-700">
                         <p className="mb-1.5 text-[11px] font-semibold uppercase tracking-wider text-amber-600">Bahan tambahan yang diperlukan</p>
                         <div className="flex flex-wrap gap-2">
                           {resepData.ingredients.map((b: any, j: number) => (
                             <button key={j} onClick={() => handleAddToStock(b.nama, b.jumlah || 1, b.satuan || "")}
                               disabled={addingStok === b.nama}
-                              className="flex items-center gap-1.5 rounded-xl bg-white px-3 py-1.5 text-xs text-stone-600 shadow-sm ring-1 ring-stone-200 transition-all hover:bg-stone-100 active:scale-95 disabled:opacity-50">
+                              className="flex items-center gap-1.5 rounded-xl bg-white px-3 py-1.5 text-xs text-stone-600 shadow-sm ring-1 ring-stone-200 transition-all hover:bg-stone-100 active:scale-95 disabled:opacity-50 dark:bg-stone-800 dark:text-stone-300 dark:ring-stone-700 dark:hover:bg-stone-700">
                               {addingStok === b.nama ? (
                                 <Loader2 className="h-3 w-3 animate-spin" />
                               ) : (
                                 <Package className="h-3 w-3 text-amber-500" />
                               )}
                               {b.nama}{b.jumlah ? ` (${b.jumlah} ${b.satuan})` : ""}
-                              <Plus className="h-3 w-3 text-stone-300" />
+                              <Plus className="h-3 w-3 text-stone-300 dark:text-stone-500" />
                             </button>
                           ))}
                         </div>
@@ -492,27 +540,27 @@ export default function ChatDetailPage() {
 
         {sending && (
           <div className="flex justify-start">
-            <div className="rounded-2xl bg-white px-4 py-3 shadow-sm ring-1 ring-stone-100">
+            <div className="rounded-2xl bg-white px-4 py-3 shadow-sm ring-1 ring-stone-100 dark:bg-stone-800 dark:ring-stone-700">
               <Bot className="h-3.5 w-3.5 text-coral mb-1" />
-              <p className="text-sm text-stone-400 animate-pulse">Wait, nuju mikir..</p>
+              <p className="text-sm text-stone-400 animate-pulse dark:text-stone-400">Wait, nuju mikir..</p>
             </div>
           </div>
         )}
       </div>
 
       {/* Input */}
-      <div className="sticky bottom-0 bg-gradient-to-t from-stone-50 via-stone-50 pt-2 pb-4">
-        <div className="flex items-center gap-2 rounded-2xl border border-stone-200 bg-white px-4 py-2 shadow-sm">
+      <div className="sticky bottom-0 bg-gradient-to-t from-stone-50 via-stone-50 pt-2 pb-4 dark:from-stone-900 dark:via-stone-900">
+        <div className="flex items-center gap-2 rounded-2xl border border-stone-200 bg-white px-4 py-2 shadow-sm dark:border-stone-700 dark:bg-stone-800">
           <input ref={inputRef} value={input} onChange={(e) => setInput(e.target.value)} onKeyDown={handleKeyDown}
-            placeholder={sending ? "AI sedang berpikir..." : "Paste link YouTube atau tanya resep..."}
+            placeholder={sending ? "AI sedang berpikir..." : "Paste link resep atau tanya resep..."}
             disabled={sending}
-            className="flex-1 bg-transparent py-1.5 text-sm outline-none placeholder:text-stone-300 disabled:opacity-50" />
+            className="flex-1 bg-transparent py-1.5 text-sm outline-none placeholder:text-stone-300 disabled:opacity-50 dark:placeholder:text-stone-500" />
           <button onClick={handleSend} disabled={!input.trim() || sending}
             className="flex h-9 w-9 items-center justify-center rounded-xl bg-coral text-white transition-all active:scale-90 disabled:opacity-30">
             {sending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Send className="h-4 w-4" />}
           </button>
         </div>
-        <p className="mt-1.5 text-center text-[10px] text-stone-300">AI Chef bisa saja tidak akurat. Verifikasi resep sebelum memasak.</p>
+        <p className="mt-1.5 text-center text-[10px] text-stone-300 dark:text-stone-500">AI Chef bisa saja tidak akurat. Verifikasi resep sebelum memasak.</p>
       </div>
     </div>
   );

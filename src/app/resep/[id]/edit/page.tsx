@@ -100,7 +100,7 @@ export default function EditResep() {
       <div className="mb-6 inline-flex items-center gap-2">
         <button
           onClick={() => router.back()}
-          className="flex h-9 w-9 items-center justify-center rounded-xl text-stone-400 hover:bg-stone-100 hover:text-stone-600"
+          className="flex h-9 w-9 items-center justify-center rounded-xl text-stone-400 hover:bg-stone-100 hover:text-stone-600 dark:text-stone-400 dark:hover:bg-stone-700 dark:hover:text-stone-300"
         >
           <ArrowLeft className="h-5 w-5" />
         </button>
@@ -109,50 +109,50 @@ export default function EditResep() {
 
       <form onSubmit={handleSubmit} className="pb-10">
         <div className="mb-5">
-          <label className="mb-1.5 block text-xs font-semibold uppercase tracking-wider text-stone-400">
+          <label className="mb-1.5 block text-xs font-semibold uppercase tracking-wider text-stone-400 dark:text-stone-400">
             Nama Resep
           </label>
           <input
             value={form.name}
             onChange={(e) => setForm((f) => ({ ...f, name: e.target.value }))}
-            className="w-full rounded-xl border border-stone-200 px-4 py-2.5 text-sm outline-none transition-colors focus:border-coral"
+            className="w-full rounded-xl border border-stone-200 px-4 py-2.5 text-sm outline-none transition-colors focus:border-coral dark:border-stone-700 dark:bg-stone-900"
             required
           />
         </div>
 
         <div className="mb-5 grid grid-cols-3 gap-3">
           <div>
-            <label className="mb-1.5 block text-xs font-semibold uppercase tracking-wider text-stone-400">
+            <label className="mb-1.5 block text-xs font-semibold uppercase tracking-wider text-stone-400 dark:text-stone-400">
               Durasi (mnt)
             </label>
             <input
               type="number"
               value={form.durasi}
               onChange={(e) => setForm((f) => ({ ...f, durasi: e.target.value }))}
-              className="w-full rounded-xl border border-stone-200 px-4 py-2.5 text-sm outline-none transition-colors focus:border-coral"
+              className="w-full rounded-xl border border-stone-200 px-4 py-2.5 text-sm outline-none transition-colors focus:border-coral dark:border-stone-700 dark:bg-stone-900"
               placeholder="30"
             />
           </div>
           <div>
-            <label className="mb-1.5 block text-xs font-semibold uppercase tracking-wider text-stone-400">
+            <label className="mb-1.5 block text-xs font-semibold uppercase tracking-wider text-stone-400 dark:text-stone-400">
               Porsi
             </label>
             <input
               type="number"
               value={form.porsi}
               onChange={(e) => setForm((f) => ({ ...f, porsi: e.target.value }))}
-              className="w-full rounded-xl border border-stone-200 px-4 py-2.5 text-sm outline-none transition-colors focus:border-coral"
+              className="w-full rounded-xl border border-stone-200 px-4 py-2.5 text-sm outline-none transition-colors focus:border-coral dark:border-stone-700 dark:bg-stone-900"
               placeholder="2"
             />
           </div>
           <div>
-            <label className="mb-1.5 block text-xs font-semibold uppercase tracking-wider text-stone-400">
+            <label className="mb-1.5 block text-xs font-semibold uppercase tracking-wider text-stone-400 dark:text-stone-400">
               Kesulitan
             </label>
             <select
               value={form.tingkatKesulitan}
               onChange={(e) => setForm((f) => ({ ...f, tingkatKesulitan: e.target.value }))}
-              className="w-full rounded-xl border border-stone-200 px-4 py-2.5 text-sm outline-none transition-colors focus:border-coral"
+              className="w-full rounded-xl border border-stone-200 px-4 py-2.5 text-sm outline-none transition-colors focus:border-coral dark:border-stone-700 dark:bg-stone-900"
             >
               <option value="">Pilih</option>
               <option value="Mudah">Mudah</option>
@@ -163,21 +163,21 @@ export default function EditResep() {
         </div>
 
         <div className="mb-5">
-          <label className="mb-1.5 block text-xs font-semibold uppercase tracking-wider text-stone-400">
+          <label className="mb-1.5 block text-xs font-semibold uppercase tracking-wider text-stone-400 dark:text-stone-400">
             Foto URL
           </label>
           <input
             value={form.foto}
             onChange={(e) => setForm((f) => ({ ...f, foto: e.target.value }))}
-            className="w-full rounded-xl border border-stone-200 px-4 py-2.5 text-sm outline-none transition-colors focus:border-coral"
+            className="w-full rounded-xl border border-stone-200 px-4 py-2.5 text-sm outline-none transition-colors focus:border-coral dark:border-stone-700 dark:bg-stone-900"
             placeholder="https://..."
           />
         </div>
 
         <div className="mb-5">
           <div className="mb-1.5 flex items-center justify-between">
-            <label className="text-xs font-semibold uppercase tracking-wider text-stone-400">
-              Bahan
+              <label className="text-xs font-semibold uppercase tracking-wider text-stone-400 dark:text-stone-400">
+                Bahan
             </label>
             <button
               type="button"
@@ -199,7 +199,7 @@ export default function EditResep() {
                     bahan[i].nama = e.target.value;
                     setForm((f) => ({ ...f, bahan }));
                   }}
-                  className="min-w-0 flex-1 rounded-xl border border-stone-200 px-3 py-2.5 text-sm outline-none transition-colors focus:border-coral"
+                  className="min-w-0 flex-1 rounded-xl border border-stone-200 px-3 py-2.5 text-sm outline-none transition-colors focus:border-coral dark:border-stone-700 dark:bg-stone-900"
                 />
                 <input
                   type="number"
@@ -210,7 +210,7 @@ export default function EditResep() {
                     bahan[i].jumlah = parseFloat(e.target.value) || 0;
                     setForm((f) => ({ ...f, bahan }));
                   }}
-                  className="w-16 rounded-xl border border-stone-200 px-2 py-2.5 text-center text-sm outline-none transition-colors focus:border-coral"
+                  className="w-16 rounded-xl border border-stone-200 px-2 py-2.5 text-center text-sm outline-none transition-colors focus:border-coral dark:border-stone-700 dark:bg-stone-900"
                 />
                 <input
                   placeholder="gr"
@@ -220,7 +220,7 @@ export default function EditResep() {
                     bahan[i].satuan = e.target.value;
                     setForm((f) => ({ ...f, bahan }));
                   }}
-                  className="w-16 rounded-xl border border-stone-200 px-2 py-2.5 text-center text-sm outline-none transition-colors focus:border-coral"
+                  className="w-16 rounded-xl border border-stone-200 px-2 py-2.5 text-center text-sm outline-none transition-colors focus:border-coral dark:border-stone-700 dark:bg-stone-900"
                 />
               </div>
             ))}
@@ -229,8 +229,8 @@ export default function EditResep() {
 
         <div className="mb-5">
           <div className="mb-1.5 flex items-center justify-between">
-            <label className="text-xs font-semibold uppercase tracking-wider text-stone-400">
-              Langkah
+              <label className="text-xs font-semibold uppercase tracking-wider text-stone-400 dark:text-stone-400">
+                Langkah
             </label>
             <button
               type="button"
@@ -244,7 +244,7 @@ export default function EditResep() {
           <div className="space-y-2">
             {form.langkah.map((l, i) => (
               <div key={i} className="flex gap-2">
-                <span className="mt-2.5 w-5 text-xs font-bold text-stone-300">
+                  <span className="mt-2.5 w-5 text-xs font-bold text-stone-300 dark:text-stone-500">
                   {i + 1}.
                 </span>
                 <textarea
@@ -255,7 +255,7 @@ export default function EditResep() {
                     langkah[i] = e.target.value;
                     setForm((f) => ({ ...f, langkah }));
                   }}
-                  className="min-w-0 flex-1 rounded-xl border border-stone-200 px-3 py-2.5 text-sm outline-none transition-colors focus:border-coral"
+                  className="min-w-0 flex-1 rounded-xl border border-stone-200 px-3 py-2.5 text-sm outline-none transition-colors focus:border-coral dark:border-stone-700 dark:bg-stone-900"
                   rows={2}
                 />
               </div>
@@ -264,13 +264,13 @@ export default function EditResep() {
         </div>
 
         <div className="mb-8">
-          <label className="mb-1.5 block text-xs font-semibold uppercase tracking-wider text-stone-400">
+          <label className="mb-1.5 block text-xs font-semibold uppercase tracking-wider text-stone-400 dark:text-stone-400">
             Tips (opsional)
           </label>
           <textarea
             value={form.tips}
             onChange={(e) => setForm((f) => ({ ...f, tips: e.target.value }))}
-            className="w-full rounded-xl border border-stone-200 px-4 py-2.5 text-sm outline-none transition-colors focus:border-coral"
+            className="w-full rounded-xl border border-stone-200 px-4 py-2.5 text-sm outline-none transition-colors focus:border-coral dark:border-stone-700 dark:bg-stone-900"
             rows={2}
             placeholder="Tips agar masakan lebih enak..."
           />
@@ -278,7 +278,7 @@ export default function EditResep() {
 
         {/* Kategori */}
         <div className="mb-6">
-          <label className="mb-2 block text-xs font-semibold uppercase tracking-wider text-stone-400">
+          <label className="mb-2 block text-xs font-semibold uppercase tracking-wider text-stone-400 dark:text-stone-400">
             Kategori
           </label>
           <div className="flex flex-wrap gap-2 mb-3">
@@ -298,8 +298,8 @@ export default function EditResep() {
                   }
                   className={`inline-flex items-center gap-1.5 rounded-xl px-3 py-1.5 text-xs font-medium transition-all ${
                     active
-                      ? "bg-coral text-white shadow-sm"
-                      : "bg-white text-stone-500 ring-1 ring-stone-200 hover:ring-coral/30"
+                        ? "bg-coral text-white shadow-sm"
+                        : "bg-white text-stone-500 ring-1 ring-stone-200 hover:ring-coral/30 dark:bg-stone-800 dark:text-stone-300 dark:ring-stone-700"
                   }`}
                 >
                   <span>{ctx.icon}</span>
@@ -357,7 +357,7 @@ export default function EditResep() {
                 e.target.value = "";
               }
             }}
-            className="w-full rounded-xl border border-stone-200 px-3 py-2 text-xs outline-none transition-colors focus:border-coral placeholder:text-stone-300"
+            className="w-full rounded-xl border border-stone-200 px-3 py-2 text-xs outline-none transition-colors focus:border-coral placeholder:text-stone-300 dark:border-stone-700 dark:bg-stone-900 dark:placeholder:text-stone-500"
           />
         </div>
 

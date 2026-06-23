@@ -203,6 +203,19 @@ function extractJsonBlock(content: string): { cleanContent: string; json: any } 
   return { cleanContent, json };
 }
 
+async function checkPremium(googleId: string): Promise<boolean> {
+  try {
+    const { ConvexHttpClient } = await import("convex/browser");
+    const convex = new ConvexHttpClient(process.env.NEXT_PUBLIC_CONVEX_URL!);
+    const { api } = await import("../../../../../convex/_generated/api");
+    const status = await convex.query(api.users.getPremiumStatus, { googleId });
+    return status?.isPremium ?? false;
+  } catch {
+    // If check fails, allow free users to still use basic chat (no search)
+    return false;
+  }
+}
+
 export async function POST(req: NextRequest) {
   const session = await auth();
   if (!session?.user?.id) {
@@ -218,7 +231,10 @@ export async function POST(req: NextRequest) {
     const searchQuery = needsSearch(messages);
     let searchContext = "";
     if (searchQuery) {
-      searchContext = await searchWeb(searchQuery);
+      const isPremium = await checkPremium(session.user.id);
+      if (isPremium) {
+        searchContext = await searchWeb(searchQuery);
+      }
     }
 
     const groqMessages: { role: string; content: string }[] = [

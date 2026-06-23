@@ -7,6 +7,9 @@ export default defineSchema({
     email: v.optional(v.string()),
     image: v.optional(v.string()),
     googleId: v.string(),
+    isPremium: v.optional(v.boolean()),
+    premiumSince: v.optional(v.number()),
+    freeMealPlansUsed: v.optional(v.number()),
   }).index("by_googleId", ["googleId"]),
 
   resep: defineTable({
@@ -51,4 +54,34 @@ export default defineSchema({
     searched: v.optional(v.boolean()),
   })
     .index("by_conversation", ["conversationId"]),
+
+  pushSubscriptions: defineTable({
+    userId: v.string(),
+    endpoint: v.string(),
+    keys: v.object({
+      p256dh: v.string(),
+      auth: v.string(),
+    }),
+  }).index("by_user", ["userId"]),
+
+  mealPlans: defineTable({
+    userId: v.string(),
+    title: v.string(),
+    budget: v.number(),
+    orang: v.number(),
+    preferensi: v.string(),
+    days: v.number(),
+    menu: v.array(v.object({
+      day: v.number(),
+      sarapan: v.optional(v.string()),
+      makanSiang: v.optional(v.string()),
+      makanMalam: v.optional(v.string()),
+    })),
+    shoppingList: v.array(v.object({
+      nama: v.string(),
+      jumlah: v.number(),
+      satuan: v.string(),
+      kategori: v.string(),
+    })),
+  }).index("by_user", ["userId"]),
 });

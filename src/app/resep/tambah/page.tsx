@@ -108,7 +108,7 @@ export default function TambahResep() {
       <div className="mb-6 inline-flex items-center gap-2">
         <button
           onClick={() => router.back()}
-          className="flex h-9 w-9 items-center justify-center rounded-xl text-stone-400 hover:bg-stone-100 hover:text-stone-600"
+          className="flex h-9 w-9 items-center justify-center rounded-xl text-stone-400 hover:bg-stone-100 hover:text-stone-600 dark:text-stone-400 dark:hover:bg-stone-700 dark:hover:text-stone-300"
         >
           <ArrowLeft className="h-5 w-5" />
         </button>
@@ -116,18 +116,18 @@ export default function TambahResep() {
       </div>
 
       {!manual && (
-        <div className="mb-6 rounded-2xl bg-white p-5 shadow-sm ring-1 ring-stone-100">
-          <div className="mb-3 flex items-center gap-2 text-sm font-medium text-stone-700">
+        <div className="mb-6 rounded-2xl bg-white p-5 shadow-sm ring-1 ring-stone-100 dark:bg-stone-800 dark:ring-stone-700">
+          <div className="mb-3 flex items-center gap-2 text-sm font-medium text-stone-700 dark:text-stone-200">
             <Film className="h-5 w-5 text-red-400" />
-            Ekstrak dari YouTube
+            Ekstrak dari Link Resep
           </div>
           <div className="flex gap-2">
             <input
               type="url"
-              placeholder="https://youtube.com/watch?v=..."
+              placeholder="https://youtube.com/watch?v=... atau https://cookpad.com/..."
               value={youtubeUrl}
               onChange={(e) => setYoutubeUrl(e.target.value)}
-              className="min-w-0 flex-1 rounded-xl border border-stone-200 px-3 py-2.5 text-sm outline-none transition-colors focus:border-coral"
+              className="min-w-0 flex-1 rounded-xl border border-stone-200 px-3 py-2.5 text-sm outline-none transition-colors focus:border-coral dark:border-stone-700 dark:bg-stone-900"
             />
             <button
               onClick={handleYoutubeExtract}
@@ -141,9 +141,12 @@ export default function TambahResep() {
               )}
             </button>
           </div>
+          <p className="mt-2 text-xs text-stone-400 dark:text-stone-400">
+            Mendukung YouTube, Cookpad, dan website resep lainnya.
+          </p>
           <button
             onClick={() => setManual(true)}
-            className="mt-2 text-xs font-medium text-coral hover:text-coral-dark"
+            className="mt-1 text-xs font-medium text-coral hover:text-coral-dark"
           >
             Atau isi manual &rarr;
           </button>
@@ -153,7 +156,7 @@ export default function TambahResep() {
       {(manual || form.name) && (
         <form onSubmit={handleSubmit} className="pb-10">
           <div className="mb-5">
-            <label className="mb-1.5 block text-xs font-semibold uppercase tracking-wider text-stone-400">
+            <label className="mb-1.5 block text-xs font-semibold uppercase tracking-wider text-stone-400 dark:text-stone-400">
               Nama Resep
             </label>
             <input
@@ -161,7 +164,7 @@ export default function TambahResep() {
               onChange={(e) =>
                 setForm((f) => ({ ...f, name: e.target.value }))
               }
-              className="w-full rounded-xl border border-stone-200 px-4 py-2.5 text-sm outline-none transition-colors focus:border-coral"
+              className="w-full rounded-xl border border-stone-200 px-4 py-2.5 text-sm outline-none transition-colors focus:border-coral dark:border-stone-700 dark:bg-stone-900"
               placeholder="Contoh: Nasi Goreng Spesial"
               required
             />
@@ -169,31 +172,31 @@ export default function TambahResep() {
 
           <div className="mb-5 grid grid-cols-3 gap-3">
             <div>
-              <label className="mb-1.5 block text-xs font-semibold uppercase tracking-wider text-stone-400">
+              <label className="mb-1.5 block text-xs font-semibold uppercase tracking-wider text-stone-400 dark:text-stone-400">
                 Durasi (mnt)
               </label>
               <input
                 type="number"
                 value={form.durasi}
                 onChange={(e) => setForm((f) => ({ ...f, durasi: e.target.value }))}
-                className="w-full rounded-xl border border-stone-200 px-4 py-2.5 text-sm outline-none transition-colors focus:border-coral"
+                className="w-full rounded-xl border border-stone-200 px-4 py-2.5 text-sm outline-none transition-colors focus:border-coral dark:border-stone-700 dark:bg-stone-900"
                 placeholder="30"
               />
             </div>
             <div>
-              <label className="mb-1.5 block text-xs font-semibold uppercase tracking-wider text-stone-400">
+              <label className="mb-1.5 block text-xs font-semibold uppercase tracking-wider text-stone-400 dark:text-stone-400">
                 Porsi
               </label>
               <input
                 type="number"
                 value={form.porsi}
                 onChange={(e) => setForm((f) => ({ ...f, porsi: e.target.value }))}
-                className="w-full rounded-xl border border-stone-200 px-4 py-2.5 text-sm outline-none transition-colors focus:border-coral"
+                className="w-full rounded-xl border border-stone-200 px-4 py-2.5 text-sm outline-none transition-colors focus:border-coral dark:border-stone-700 dark:bg-stone-900"
                 placeholder="2"
               />
             </div>
             <div>
-              <label className="mb-1.5 block text-xs font-semibold uppercase tracking-wider text-stone-400">
+              <label className="mb-1.5 block text-xs font-semibold uppercase tracking-wider text-stone-400 dark:text-stone-400">
                 Kesulitan
               </label>
               <select
@@ -201,7 +204,7 @@ export default function TambahResep() {
                 onChange={(e) =>
                   setForm((f) => ({ ...f, tingkatKesulitan: e.target.value }))
                 }
-                className="w-full rounded-xl border border-stone-200 px-4 py-2.5 text-sm outline-none transition-colors focus:border-coral"
+                className="w-full rounded-xl border border-stone-200 px-4 py-2.5 text-sm outline-none transition-colors focus:border-coral dark:border-stone-700 dark:bg-stone-900"
               >
                 <option value="">Pilih</option>
                 <option value="Mudah">Mudah</option>
@@ -213,7 +216,7 @@ export default function TambahResep() {
 
           <div className="mb-5">
             <div className="mb-1.5 flex items-center justify-between">
-              <label className="text-xs font-semibold uppercase tracking-wider text-stone-400">
+              <label className="text-xs font-semibold uppercase tracking-wider text-stone-400 dark:text-stone-400">
                 Bahan
               </label>
               <button
@@ -236,7 +239,7 @@ export default function TambahResep() {
                       bahan[i].nama = e.target.value;
                       setForm((f) => ({ ...f, bahan }));
                     }}
-                    className="min-w-0 flex-1 rounded-xl border border-stone-200 px-3 py-2.5 text-sm outline-none transition-colors focus:border-coral"
+                    className="min-w-0 flex-1 rounded-xl border border-stone-200 px-3 py-2.5 text-sm outline-none transition-colors focus:border-coral dark:border-stone-700 dark:bg-stone-900"
                   />
                   <input
                     type="number"
@@ -247,7 +250,7 @@ export default function TambahResep() {
                       bahan[i].jumlah = parseFloat(e.target.value) || 0;
                       setForm((f) => ({ ...f, bahan }));
                     }}
-                    className="w-16 rounded-xl border border-stone-200 px-2 py-2.5 text-center text-sm outline-none transition-colors focus:border-coral"
+                    className="w-16 rounded-xl border border-stone-200 px-2 py-2.5 text-center text-sm outline-none transition-colors focus:border-coral dark:border-stone-700 dark:bg-stone-900"
                   />
                   <input
                     placeholder="gr"
@@ -257,7 +260,7 @@ export default function TambahResep() {
                       bahan[i].satuan = e.target.value;
                       setForm((f) => ({ ...f, bahan }));
                     }}
-                    className="w-16 rounded-xl border border-stone-200 px-2 py-2.5 text-center text-sm outline-none transition-colors focus:border-coral"
+                    className="w-16 rounded-xl border border-stone-200 px-2 py-2.5 text-center text-sm outline-none transition-colors focus:border-coral dark:border-stone-700 dark:bg-stone-900"
                   />
                 </div>
               ))}
@@ -266,7 +269,7 @@ export default function TambahResep() {
 
           <div className="mb-5">
             <div className="mb-1.5 flex items-center justify-between">
-              <label className="text-xs font-semibold uppercase tracking-wider text-stone-400">
+              <label className="text-xs font-semibold uppercase tracking-wider text-stone-400 dark:text-stone-400">
                 Langkah
               </label>
               <button
@@ -281,7 +284,7 @@ export default function TambahResep() {
             <div className="space-y-2">
               {form.langkah.map((l, i) => (
                 <div key={i} className="flex gap-2">
-                  <span className="mt-2.5 w-5 text-xs font-bold text-stone-300">
+                  <span className="mt-2.5 w-5 text-xs font-bold text-stone-300 dark:text-stone-500">
                     {i + 1}.
                   </span>
                   <textarea
@@ -292,7 +295,7 @@ export default function TambahResep() {
                       langkah[i] = e.target.value;
                       setForm((f) => ({ ...f, langkah }));
                     }}
-                    className="min-w-0 flex-1 rounded-xl border border-stone-200 px-3 py-2.5 text-sm outline-none transition-colors focus:border-coral"
+                    className="min-w-0 flex-1 rounded-xl border border-stone-200 px-3 py-2.5 text-sm outline-none transition-colors focus:border-coral dark:border-stone-700 dark:bg-stone-900"
                     rows={2}
                   />
                 </div>
@@ -302,7 +305,7 @@ export default function TambahResep() {
 
           {/* Kategori */}
           <div className="mb-6">
-            <label className="mb-2 block text-xs font-semibold uppercase tracking-wider text-stone-400">
+            <label className="mb-2 block text-xs font-semibold uppercase tracking-wider text-stone-400 dark:text-stone-400">
               Kategori
             </label>
             <div className="flex flex-wrap gap-2 mb-3">
@@ -323,7 +326,7 @@ export default function TambahResep() {
                     className={`inline-flex items-center gap-1.5 rounded-xl px-3 py-1.5 text-xs font-medium transition-all ${
                       active
                         ? "bg-coral text-white shadow-sm"
-                        : "bg-white text-stone-500 ring-1 ring-stone-200 hover:ring-coral/30"
+                        : "bg-white text-stone-500 ring-1 ring-stone-200 hover:ring-coral/30 dark:bg-stone-800 dark:text-stone-300 dark:ring-stone-700"
                     }`}
                   >
                     <span>{ctx.icon}</span>
@@ -381,12 +384,12 @@ export default function TambahResep() {
                   e.target.value = "";
                 }
               }}
-              className="w-full rounded-xl border border-stone-200 px-3 py-2 text-xs outline-none transition-colors focus:border-coral placeholder:text-stone-300"
+              className="w-full rounded-xl border border-stone-200 px-3 py-2 text-xs outline-none transition-colors focus:border-coral placeholder:text-stone-300 dark:border-stone-700 dark:bg-stone-900 dark:placeholder:text-stone-500"
             />
           </div>
 
           <div className="mb-8">
-            <label className="mb-1.5 block text-xs font-semibold uppercase tracking-wider text-stone-400">
+            <label className="mb-1.5 block text-xs font-semibold uppercase tracking-wider text-stone-400 dark:text-stone-400">
               Tips (opsional)
             </label>
             <textarea
@@ -394,7 +397,7 @@ export default function TambahResep() {
               onChange={(e) =>
                 setForm((f) => ({ ...f, tips: e.target.value }))
               }
-              className="w-full rounded-xl border border-stone-200 px-4 py-2.5 text-sm outline-none transition-colors focus:border-coral"
+              className="w-full rounded-xl border border-stone-200 px-4 py-2.5 text-sm outline-none transition-colors focus:border-coral dark:border-stone-700 dark:bg-stone-900"
               rows={2}
               placeholder="Tips agar masakan lebih enak..."
             />

@@ -99,14 +99,14 @@ export default function StokPage() {
       <div className="mb-6 flex items-center justify-between">
         <div>
           <h1 className="text-2xl font-bold tracking-tight">Stok Dapur</h1>
-          <p className="mt-0.5 text-sm text-stone-400">
+          <p className="mt-0.5 text-sm text-stone-400 dark:text-stone-400">
             {stokList?.length || 0} bahan tersedia
           </p>
         </div>
         <button
           onClick={() => setShowForm(!showForm)}
           className={`flex h-12 w-12 items-center justify-center rounded-2xl text-white shadow-lg transition-all active:scale-90 ${
-            showForm ? "bg-stone-300 shadow-none" : "bg-sage shadow-sage/25"
+            showForm ? "bg-stone-300 dark:bg-stone-600 shadow-none" : "bg-sage shadow-sage/25"
           }`}
         >
           {showForm ? <X className="h-5 w-5" /> : <Plus className="h-6 w-6" />}
@@ -115,23 +115,23 @@ export default function StokPage() {
 
       {/* Search bar */}
       <div className="relative mb-4">
-        <Search className="pointer-events-none absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-stone-400" />
+        <Search className="pointer-events-none absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-stone-400 dark:text-stone-400" />
         <input
           value={search}
           onChange={(e) => setSearch(e.target.value)}
           placeholder="Cari bahan di dapur..."
-          className="w-full rounded-2xl border border-stone-200 bg-white py-2.5 pl-10 pr-4 text-sm outline-none transition-colors focus:border-coral"
+          className="w-full rounded-2xl border border-stone-200 bg-white py-2.5 pl-10 pr-4 text-sm outline-none transition-colors focus:border-coral dark:border-stone-700 dark:bg-stone-800"
         />
       </div>
 
       {showForm && (
-        <form onSubmit={handleSubmit} className="mb-6 rounded-2xl bg-white p-5 shadow-sm ring-1 ring-stone-100">
+        <form onSubmit={handleSubmit} className="mb-6 rounded-2xl bg-white p-5 shadow-sm ring-1 ring-stone-100 dark:bg-stone-800 dark:ring-stone-700">
           <div className="mb-3 flex gap-2">
             <input
               placeholder="Nama bahan"
               value={nama}
               onChange={(e) => setNama(e.target.value)}
-              className="min-w-0 flex-1 rounded-xl border border-stone-200 px-3 py-2.5 text-sm outline-none transition-colors focus:border-coral"
+              className="min-w-0 flex-1 rounded-xl border border-stone-200 px-3 py-2.5 text-sm outline-none transition-colors focus:border-coral dark:border-stone-700 dark:bg-stone-900"
               autoFocus
             />
             <input
@@ -139,13 +139,13 @@ export default function StokPage() {
               placeholder="0"
               value={jumlah}
               onChange={(e) => setJumlah(e.target.value)}
-              className="w-16 rounded-xl border border-stone-200 px-2 py-2.5 text-center text-sm outline-none transition-colors focus:border-coral"
+              className="w-16 rounded-xl border border-stone-200 px-2 py-2.5 text-center text-sm outline-none transition-colors focus:border-coral dark:border-stone-700 dark:bg-stone-900"
             />
             <input
               placeholder="gr"
               value={satuan}
               onChange={(e) => setSatuan(e.target.value)}
-              className="w-16 rounded-xl border border-stone-200 px-2 py-2.5 text-center text-sm outline-none transition-colors focus:border-coral"
+              className="w-16 rounded-xl border border-stone-200 px-2 py-2.5 text-center text-sm outline-none transition-colors focus:border-coral dark:border-stone-700 dark:bg-stone-900"
             />
           </div>
           <button
@@ -163,11 +163,11 @@ export default function StokPage() {
         </div>
       ) : stokList.length === 0 ? (
         <div className="flex flex-col items-center py-24">
-          <div className="mb-5 flex h-20 w-20 items-center justify-center rounded-[24px] bg-stone-100">
-            <Package className="h-9 w-9 text-stone-300" />
+          <div className="mb-5 flex h-20 w-20 items-center justify-center rounded-[24px] bg-stone-100 dark:bg-stone-700">
+            <Package className="h-9 w-9 text-stone-300 dark:text-stone-500" />
           </div>
           <p className="mb-1 text-base font-semibold">Dapur kosong</p>
-          <p className="mb-6 text-sm text-stone-400">Tambahkan bahan yang kamu punya.</p>
+          <p className="mb-6 text-sm text-stone-400 dark:text-stone-400">Tambahkan bahan yang kamu punya.</p>
           <button
             onClick={() => setShowForm(true)}
             className="flex items-center gap-2 rounded-2xl bg-sage px-6 py-3 text-sm font-semibold text-white shadow-lg shadow-sage/25 transition-all active:scale-[0.98]"
@@ -179,7 +179,7 @@ export default function StokPage() {
       ) : (
         <div className="mb-10 space-y-3">
           {Array.from(grouped.entries()).map(([kat, items]) => (
-            <div key={kat} className="rounded-2xl bg-white shadow-sm ring-1 ring-stone-100">
+            <div key={kat} className="rounded-2xl bg-white shadow-sm ring-1 ring-stone-100 dark:bg-stone-800 dark:ring-stone-700">
               <button
                 onClick={() => {
                   const next = new Set(expandKat);
@@ -190,24 +190,24 @@ export default function StokPage() {
                 className="flex w-full items-center justify-between px-5 py-3"
               >
                 <div className="flex items-center gap-2">
-                  <span className="text-xs font-semibold uppercase tracking-wider text-stone-400">{kat}</span>
-                  <span className="rounded-md bg-stone-100 px-1.5 py-0.5 text-xs text-stone-500">{items.length}</span>
+                  <span className="text-xs font-semibold uppercase tracking-wider text-stone-400 dark:text-stone-400">{kat}</span>
+                  <span className="rounded-md bg-stone-100 px-1.5 py-0.5 text-xs text-stone-500 dark:bg-stone-700 dark:text-stone-300">{items.length}</span>
                 </div>
                 {expandKat.has(kat) ? (
-                  <ChevronUp className="h-4 w-4 text-stone-400" />
+                  <ChevronUp className="h-4 w-4 text-stone-400 dark:text-stone-400" />
                 ) : (
-                  <ChevronDown className="h-4 w-4 text-stone-400" />
+                  <ChevronDown className="h-4 w-4 text-stone-400 dark:text-stone-400" />
                 )}
               </button>
               {expandKat.has(kat) && (
-                <div className="border-t border-stone-100 px-5 py-2">
+                <div className="border-t border-stone-100 px-5 py-2 dark:border-stone-700">
                   {items.map((item) => {
                     const low = isLowStock(item.jumlah, item.satuan);
                     const isEditing = editingId === item._id;
                     return (
                       <div
                         key={item._id}
-                        className="flex items-center justify-between rounded-xl px-1 py-2.5 transition-colors hover:bg-stone-50"
+                        className="flex items-center justify-between rounded-xl px-1 py-2.5 transition-colors hover:bg-stone-50 dark:hover:bg-stone-700"
                       >
                         <div className="flex items-center gap-3">
                           {low && (
@@ -230,11 +230,11 @@ export default function StokPage() {
                                       if (e.key === "Escape") setEditingId(null);
                                     }}
                                   />
-                                  <span className="text-xs text-stone-400">{item.satuan}</span>
+                                  <span className="text-xs text-stone-400 dark:text-stone-400">{item.satuan}</span>
                                 </div>
                               ) : (
                                 <>
-                                  <span className={`text-xs ${low ? "font-semibold text-amber-600" : "text-stone-400"}`}>
+                                  <span className={`text-xs ${low ? "font-semibold text-amber-600" : "text-stone-400 dark:text-stone-400"}`}>
                                     {item.jumlah === Math.floor(item.jumlah) ? item.jumlah : item.jumlah} {item.satuan}
                                   </span>
                                   <button
@@ -242,7 +242,7 @@ export default function StokPage() {
                                       setEditingId(item._id);
                                       setEditJumlah(item.jumlah.toString());
                                     }}
-                                    className="flex h-5 w-5 items-center justify-center rounded text-stone-300 hover:bg-stone-100 hover:text-stone-500"
+                                    className="flex h-5 w-5 items-center justify-center rounded text-stone-300 hover:bg-stone-100 hover:text-stone-500 dark:text-stone-500 dark:hover:bg-stone-700 dark:hover:text-stone-300"
                                   >
                                     <Pencil className="h-3 w-3" />
                                   </button>
@@ -253,7 +253,7 @@ export default function StokPage() {
                         </div>
                         <button
                           onClick={() => removeStok({ id: item._id })}
-                          className="flex h-8 w-8 items-center justify-center rounded-lg text-stone-300 transition-colors hover:bg-red-50 hover:text-red-400"
+                          className="flex h-8 w-8 items-center justify-center rounded-lg text-stone-300 transition-colors hover:bg-red-50 hover:text-red-400 dark:text-stone-500 dark:hover:bg-red-900/30"
                         >
                           <X className="h-4 w-4" />
                         </button>

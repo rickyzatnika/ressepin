@@ -10,7 +10,9 @@
 
 import type * as auth from "../auth.js";
 import type * as conversations from "../conversations.js";
+import type * as mealPlans from "../mealPlans.js";
 import type * as messages from "../messages.js";
+import type * as pushSubscriptions from "../pushSubscriptions.js";
 import type * as resep from "../resep.js";
 import type * as stok from "../stok.js";
 import type * as users from "../users.js";
@@ -24,7 +26,9 @@ import type {
 declare const fullApi: ApiFromModules<{
   auth: typeof auth;
   conversations: typeof conversations;
+  mealPlans: typeof mealPlans;
   messages: typeof messages;
+  pushSubscriptions: typeof pushSubscriptions;
   resep: typeof resep;
   stok: typeof stok;
   users: typeof users;

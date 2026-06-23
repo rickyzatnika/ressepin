@@ -12,6 +12,13 @@ export const list = query({
   },
 });
 
+export const getById = query({
+  args: { id: v.id("conversations") },
+  handler: async (ctx, args) => {
+    return await ctx.db.get(args.id);
+  },
+});
+
 export const create = mutation({
   args: {
     userId: v.string(),
