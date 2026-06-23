@@ -91,7 +91,7 @@ async function handleGeneralUrl(url: string) {
     throw new Error(`Tidak bisa mengakses halaman tersebut. Pastikan URL benar dan bisa diakses publik.`);
   }
 
-  // Extract JSON-LD recipe data if available
+  // 1. Extract JSON-LD recipe data if available
   let jsonLdRecipe: any = null;
   const ldMatch = html.match(/<script[^>]*type=["']application\/ld\+json["'][^>]*>([\s\S]*?)<\/script>/gi);
   if (ldMatch) {
@@ -108,10 +108,24 @@ async function handleGeneralUrl(url: string) {
     }
   }
 
-  // Extract page text content (strip HTML)
-  const pageText = extractPageText(html).slice(0, 8000);
+  // 2. Try Cookpad-specific extraction
+  let pageContent = extractCookpadContent(html);
 
-  const resep = await extractResepFromText(jsonLdRecipe ? JSON.stringify(jsonLdRecipe) : "", pageText, "general");
+  // 3. If not Cookpad, extract structured recipe content from HTML
+  if (!pageContent) {
+    pageContent = extractRecipeContent(html);
+  }
+
+  // 4. Fallback to plain text
+  if (!pageContent) {
+    pageContent = extractPageText(html).slice(0, 8000);
+  }
+
+  const resep = await extractResepFromText(
+    jsonLdRecipe ? JSON.stringify(jsonLdRecipe) : "",
+    pageContent,
+    "general",
+  );
 
   // Try to find an OG image
   let foto = "/my-resep.jpg";
@@ -119,6 +133,113 @@ async function handleGeneralUrl(url: string) {
   if (ogMatch) foto = ogMatch[1];
 
   return NextResponse.json({ ...resep, foto, youtubeUrl: undefined });
+}
+
+/** Extract structured content from Cookpad pages */
+function extractCookpadContent(html: string): string | null {
+  if (!html.includes("cookpad.com") && !html.includes("cookpad")) return null;
+
+  const parts: string[] = [];
+
+  // Title
+  const titleMatch = html.match(/<h1[^>]*>([\s\S]*?)<\/h1>/i);
+  if (titleMatch) parts.push("JUDUL: " + stripTags(titleMatch[1]));
+
+  // Ingredients — Cookpad uses ingredient lists
+  const ingredientSections = html.match(
+    /<(?:div|section|ul)[^>]*?(?:class|id)=["'][^"']*?(?:ingredient|bahan|list-ingredient)[^"']*["'][^>]*>[\s\S]*?<\/(?:div|section|ul)>/gi,
+  );
+  if (ingredientSections) {
+    parts.push("\nBAHAN:");
+    for (const section of ingredientSections) {
+      const items = section.match(/<li[^>]*>([\s\S]*?)<\/li>/gi) || [];
+      for (const item of items) {
+        parts.push("- " + stripTags(item));
+      }
+    }
+  }
+
+  // Steps
+  const stepSections = html.match(
+    /<(?:div|section|ol|ul)[^>]*?(?:class|id)=["'][^"']*?(?:step|langkah|direction|instruction|cara)[^"']*["'][^>]*>[\s\S]*?<\/(?:div|section|ol|ul)>/gi,
+  );
+  if (stepSections) {
+    parts.push("\nLANGKAH:");
+    for (const section of stepSections) {
+      const liItems = section.match(/<li[^>]*>([\s\S]*?)<\/li>/gi) || [];
+      for (let idx = 0; idx < liItems.length; idx++) {
+        parts.push((idx + 1) + ". " + stripTags(liItems[idx]));
+      }
+    }
+  }
+
+  if (parts.length > 2) return parts.join("\n").slice(0, 8000);
+  return null;
+}
+
+/** Extract recipe-relevant content from HTML by preserving headings, lists, and paragraphs */
+function extractRecipeContent(html: string): string {
+  const parts: string[] = [];
+
+  // Try to find recipe containers (common class/id patterns)
+  const containerPatterns = [
+    /<(?:div|section|article|main)[^>]*?(?:class|id)=["'][^"']*?(?:recipe|resep|post|entry|content|main|article-body|recipe-content|recipe__content)[^"']*["'][^>]*>[\s\S]*?<\/(?:div|section|article|main)>/gi,
+  ];
+
+  let contentArea = html;
+  for (const pattern of containerPatterns) {
+    const match = contentArea.match(pattern);
+    if (match) {
+      contentArea = match[0];
+      break;
+    }
+  }
+
+  // Extract headings (recipe titles, section headers)
+  const headings = contentArea.match(/<h[1-6][^>]*>([\s\S]*?)<\/h[1-6]>/gi) || [];
+  for (const h of headings) {
+    const text = stripTags(h);
+    if (text.length > 2) parts.push(text);
+  }
+
+  // Extract lists (ingredients, steps)
+  const lists = contentArea.match(/<(?:ul|ol)[^>]*>[\s\S]*?<\/(?:ul|ol)>/gi) || [];
+  for (const list of lists) {
+    const items = list.match(/<li[^>]*>([\s\S]*?)<\/li>/gi) || [];
+    for (const item of items) {
+      parts.push(stripTags(item));
+    }
+  }
+
+  // Extract paragraphs with meaningful content
+  const paragraphs = contentArea.match(/<p[^>]*>([\s\S]*?)<\/p>/gi) || [];
+  for (const p of paragraphs) {
+    const text = stripTags(p);
+    if (text.length > 20) parts.push(text);
+  }
+
+  // Extract table rows (some sites use tables for ingredients)
+  const tableCells = contentArea.match(/<td[^>]*>([\s\S]*?)<\/td>/gi) || [];
+  for (const cell of tableCells) {
+    const text = stripTags(cell);
+    if (text.length > 1) parts.push(text);
+  }
+
+  const result = parts.join("\n").slice(0, 8000);
+  return result || "";
+}
+
+function stripTags(str: string): string {
+  return str
+    .replace(/<[^>]+>/g, " ")
+    .replace(/&amp;/g, "&")
+    .replace(/&lt;/g, "<")
+    .replace(/&gt;/g, ">")
+    .replace(/&quot;/g, '"')
+    .replace(/&#39;/g, "'")
+    .replace(/&nbsp;/g, " ")
+    .replace(/\s+/g, " ")
+    .trim();
 }
 
 function findRecipeInJsonLd(data: any): any | null {

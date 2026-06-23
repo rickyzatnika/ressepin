@@ -5,14 +5,7 @@ import { useSession } from "next-auth/react";
 import { useMutation } from "convex/react";
 import { api } from "../../../../convex/_generated/api";
 import { useRouter } from "next/navigation";
-import {
-  ArrowLeft,
-  Film,
-  ChefHat,
-  Plus,
-  Loader2,
-  X,
-} from "lucide-react";
+import { ArrowLeft, Film, ChefHat, Plus, Loader2, X } from "lucide-react";
 import { KONTEKS_KATEGORI } from "@/lib/kategori";
 
 export default function TambahResep() {
@@ -51,16 +44,18 @@ export default function TambahResep() {
           tingkatKesulitan: data.tingkatKesulitan || "",
           porsi: data.porsi?.toString() || "",
           foto: data.foto || "",
-          bahan: data.bahan?.length > 0
-            ? data.bahan.map((b: any) => ({
-                nama: b.nama || "",
-                jumlah: b.jumlah ?? 0,
-                satuan: b.satuan || "",
-              }))
-            : [{ nama: "", jumlah: 0, satuan: "" }],
-          langkah: data.langkah?.length > 0
-            ? data.langkah.map((l: any) => l || "")
-            : [""],
+          bahan:
+            data.bahan?.length > 0
+              ? data.bahan.map((b: any) => ({
+                  nama: b.nama || "",
+                  jumlah: b.jumlah ?? 0,
+                  satuan: b.satuan || "",
+                }))
+              : [{ nama: "", jumlah: 0, satuan: "" }],
+          langkah:
+            data.langkah?.length > 0
+              ? data.langkah.map((l: any) => l || "")
+              : [""],
           tips: data.tips || "",
           kategori: data.kategori || [],
         });
@@ -121,18 +116,18 @@ export default function TambahResep() {
             <Film className="h-5 w-5 text-red-400" />
             Ekstrak dari Link Resep
           </div>
-          <div className="flex gap-2">
+          <div className="flex flex-col sm:flex-row gap-2">
             <input
               type="url"
-              placeholder="https://youtube.com/watch?v=... atau https://cookpad.com/..."
+              placeholder="paste URL disini..."
               value={youtubeUrl}
               onChange={(e) => setYoutubeUrl(e.target.value)}
-              className="min-w-0 flex-1 rounded-xl border border-stone-200 px-3 py-2.5 text-sm outline-none transition-colors focus:border-coral dark:border-stone-700 dark:bg-stone-900"
+              className="min-w-0 flex-1 rounded-xl border border-stone-200 px-3 py-3 text-sm outline-none transition-colors focus:border-coral dark:border-stone-700 dark:bg-stone-900"
             />
             <button
               onClick={handleYoutubeExtract}
               disabled={loading}
-              className="flex items-center gap-1.5 rounded-xl bg-coral px-4 py-2.5 text-sm font-semibold text-white transition-all active:scale-95 disabled:opacity-50"
+              className="flex text-center justify-center items-center gap-1.5 rounded-xl bg-coral py-2 px-4  sm:py-2.5 text-sm font-semibold text-white transition-all active:scale-95 disabled:opacity-50"
             >
               {loading ? (
                 <Loader2 className="h-4 w-4 animate-spin" />
@@ -161,9 +156,7 @@ export default function TambahResep() {
             </label>
             <input
               value={form.name}
-              onChange={(e) =>
-                setForm((f) => ({ ...f, name: e.target.value }))
-              }
+              onChange={(e) => setForm((f) => ({ ...f, name: e.target.value }))}
               className="w-full rounded-xl border border-stone-200 px-4 py-2.5 text-sm outline-none transition-colors focus:border-coral dark:border-stone-700 dark:bg-stone-900"
               placeholder="Contoh: Nasi Goreng Spesial"
               required
@@ -178,7 +171,9 @@ export default function TambahResep() {
               <input
                 type="number"
                 value={form.durasi}
-                onChange={(e) => setForm((f) => ({ ...f, durasi: e.target.value }))}
+                onChange={(e) =>
+                  setForm((f) => ({ ...f, durasi: e.target.value }))
+                }
                 className="w-full rounded-xl border border-stone-200 px-4 py-2.5 text-sm outline-none transition-colors focus:border-coral dark:border-stone-700 dark:bg-stone-900"
                 placeholder="30"
               />
@@ -190,7 +185,9 @@ export default function TambahResep() {
               <input
                 type="number"
                 value={form.porsi}
-                onChange={(e) => setForm((f) => ({ ...f, porsi: e.target.value }))}
+                onChange={(e) =>
+                  setForm((f) => ({ ...f, porsi: e.target.value }))
+                }
                 className="w-full rounded-xl border border-stone-200 px-4 py-2.5 text-sm outline-none transition-colors focus:border-coral dark:border-stone-700 dark:bg-stone-900"
                 placeholder="2"
               />
@@ -368,7 +365,13 @@ export default function TambahResep() {
                   if (val) {
                     setForm((f) => ({
                       ...f,
-                      kategori: [...f.kategori, ...val.split(",").map((s) => s.trim()).filter(Boolean)],
+                      kategori: [
+                        ...f.kategori,
+                        ...val
+                          .split(",")
+                          .map((s) => s.trim())
+                          .filter(Boolean),
+                      ],
                     }));
                     (e.target as HTMLInputElement).value = "";
                   }
@@ -379,7 +382,13 @@ export default function TambahResep() {
                 if (val) {
                   setForm((f) => ({
                     ...f,
-                    kategori: [...f.kategori, ...val.split(",").map((s) => s.trim()).filter(Boolean)],
+                    kategori: [
+                      ...f.kategori,
+                      ...val
+                        .split(",")
+                        .map((s) => s.trim())
+                        .filter(Boolean),
+                    ],
                   }));
                   e.target.value = "";
                 }
@@ -394,9 +403,7 @@ export default function TambahResep() {
             </label>
             <textarea
               value={form.tips}
-              onChange={(e) =>
-                setForm((f) => ({ ...f, tips: e.target.value }))
-              }
+              onChange={(e) => setForm((f) => ({ ...f, tips: e.target.value }))}
               className="w-full rounded-xl border border-stone-200 px-4 py-2.5 text-sm outline-none transition-colors focus:border-coral dark:border-stone-700 dark:bg-stone-900"
               rows={2}
               placeholder="Tips agar masakan lebih enak..."
