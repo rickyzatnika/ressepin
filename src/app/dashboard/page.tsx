@@ -25,6 +25,7 @@ import {
   Crown,
   Bell,
   BellOff,
+  Loader2,
 } from "lucide-react";
 import { KONTEKS_KATEGORI, getKonteksForKategori } from "@/lib/kategori";
 import QuickStart from "./QuickStart";
@@ -35,6 +36,7 @@ import {
   subscribeToPush,
   unsubscribeFromPush,
   getPushSubscription,
+  registerServiceWorker,
 } from "@/lib/notifications";
 
 const KONTEKS_ICON: Record<string, any> = {
@@ -108,15 +110,21 @@ export default function Dashboard() {
   // Notifications
   const [notifPermission, setNotifPermission] = useState<NotificationPermission>("default");
   const [pushSubscribed, setPushSubscribed] = useState(false);
+  const [notifLoading, setNotifLoading] = useState(false);
+  const [notifError, setNotifError] = useState("");
   const subscribePush = useMutation(api.pushSubscriptions.subscribe);
   const unsubscribePush = useMutation(api.pushSubscriptions.unsubscribe);
 
   useEffect(() => {
     setNotifPermission(getPermission());
+    registerServiceWorker(); // warm up SW early
   }, []);
 
   useEffect(() => {
-    getPushSubscription().then((sub) => setPushSubscribed(!!sub));
+    getPushSubscription().then((sub) => {
+      setPushSubscribed(!!sub);
+      if (sub) setNotifPermission("granted");
+    });
   }, []);
 
   // Auto-notify: stok hampir habis + daily reminder
@@ -144,28 +152,56 @@ export default function Dashboard() {
   }, [stokList, resepList, streak]);
 
   async function handleNotifToggle() {
+    if (notifLoading) return;
+    setNotifError("");
+
+    // Unsubscribe
     if (pushSubscribed) {
-      await unsubscribeFromPush(session?.user?.id || "", unsubscribePush);
-      setPushSubscribed(false);
+      setNotifLoading(true);
+      try {
+        await unsubscribeFromPush(session?.user?.id || "", unsubscribePush);
+        setPushSubscribed(false);
+        setNotifPermission(getPermission());
+      } catch (e) {
+        setNotifError("Gagal berhenti langganan");
+      } finally {
+        setNotifLoading(false);
+      }
       return;
     }
 
-    const ok = await requestPermission();
-    setNotifPermission(ok ? "granted" : "denied");
-    if (!ok) return;
+    // Permission denied — guide user
+    if (notifPermission === "denied") {
+      setNotifError("Notifikasi diblokir browser. Izinkan lewat Pengaturan > Privasi & Keamanan > Notifikasi.");
+      return;
+    }
 
-    const subscribed = await subscribeToPush(
-      session?.user?.id || "",
-      subscribePush,
-    );
-    setPushSubscribed(subscribed);
+    // Permission default — request first
+    if (notifPermission === "default") {
+      const ok = await requestPermission();
+      setNotifPermission(ok ? "granted" : "denied");
+      if (!ok) return;
+    }
 
-    // Notify immediately on grant
-    if (subscribed && stokList) {
-      const lowStock = stokList.filter((s) => s.jumlah <= 1);
-      if (lowStock.length > 0) {
-        sendNotification("Notifikasi aktif! 🔔", `${lowStock.length} bahan hampir habis.`);
+    // Permission granted — subscribe push
+    setNotifLoading(true);
+    try {
+      const subscribed = await subscribeToPush(
+        session?.user?.id || "",
+        subscribePush,
+      );
+      setPushSubscribed(subscribed);
+
+      if (subscribed && stokList) {
+        const lowStock = stokList.filter((s) => s.jumlah <= 1);
+        if (lowStock.length > 0) {
+          sendNotification("Notifikasi aktif! 🔔", `${lowStock.length} bahan hampir habis.`);
+        }
       }
+    } catch {
+      setNotifError("Gagal berlangganan notifikasi, coba lagi.");
+    } finally {
+      setNotifLoading(false);
     }
   }
 
@@ -250,21 +286,46 @@ export default function Dashboard() {
           </p>
         </div>
         <div className="flex items-center gap-1.5">
-          <button
-            onClick={handleNotifToggle}
-            className={`flex shrink-0 items-center justify-center rounded-xl p-2 transition-colors ${
-              pushSubscribed
-                ? "bg-sage-light text-sage-dark hover:bg-sage-light/80"
-                : "bg-stone-100 text-stone-400 hover:bg-stone-200 dark:bg-stone-800 dark:text-stone-500"
-            }`}
-            title={pushSubscribed ? "Notifikasi aktif" : "Aktifkan notifikasi"}
-          >
-            {pushSubscribed ? (
-              <Bell className="h-4 w-4" />
-            ) : (
-              <BellOff className="h-4 w-4" />
+          <div className="relative">
+            <button
+              onClick={handleNotifToggle}
+              disabled={notifLoading}
+              className={`flex shrink-0 items-center justify-center rounded-xl p-2 transition-colors ${
+                notifLoading
+                  ? "bg-stone-100 text-stone-300 dark:bg-stone-800 dark:text-stone-600"
+                  : notifPermission === "granted" || pushSubscribed
+                    ? "bg-sage-light text-sage-dark hover:bg-sage-light/80"
+                    : notifPermission === "denied"
+                      ? "bg-red-50 text-red-400 hover:bg-red-100 dark:bg-red-900/20 dark:text-red-400"
+                      : "bg-stone-100 text-stone-400 hover:bg-stone-200 dark:bg-stone-800 dark:text-stone-500"
+              }`}
+              title={
+                notifLoading ? "Memproses..." :
+                pushSubscribed ? "Notifikasi aktif" :
+                notifPermission === "denied" ? "Notifikasi diblokir" :
+                "Aktifkan notifikasi"
+              }
+            >
+              {notifLoading ? (
+                <Loader2 className="h-4 w-4 animate-spin" />
+              ) : pushSubscribed || notifPermission === "granted" ? (
+                <Bell className="h-4 w-4" />
+              ) : (
+                <BellOff className="h-4 w-4" />
+              )}
+            </button>
+            {notifError && (
+              <div className="absolute right-0 top-full z-10 mt-2 w-64 rounded-xl bg-white p-3 text-xs text-red-500 shadow-lg ring-1 ring-stone-200 dark:bg-stone-800 dark:ring-stone-700">
+                {notifError}
+                <button
+                  onClick={() => setNotifError("")}
+                  className="ml-1 font-bold text-stone-400 hover:text-stone-600"
+                >
+                  ×
+                </button>
+              </div>
             )}
-          </button>
+          </div>
           {!premiumStatus?.isPremium && (
             <Link
               href="/premium"

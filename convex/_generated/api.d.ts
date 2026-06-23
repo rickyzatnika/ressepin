@@ -12,6 +12,7 @@ import type * as auth from "../auth.js";
 import type * as conversations from "../conversations.js";
 import type * as mealPlans from "../mealPlans.js";
 import type * as messages from "../messages.js";
+import type * as payments from "../payments.js";
 import type * as pushNotifications from "../pushNotifications.js";
 import type * as pushSubscriptions from "../pushSubscriptions.js";
 import type * as resep from "../resep.js";
@@ -29,6 +30,7 @@ declare const fullApi: ApiFromModules<{
   conversations: typeof conversations;
   mealPlans: typeof mealPlans;
   messages: typeof messages;
+  payments: typeof payments;
   pushNotifications: typeof pushNotifications;
   pushSubscriptions: typeof pushSubscriptions;
   resep: typeof resep;

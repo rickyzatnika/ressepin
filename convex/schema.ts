@@ -64,6 +64,18 @@ export default defineSchema({
     }),
   }).index("by_user", ["userId"]),
 
+  paymentRequests: defineTable({
+    userId: v.string(),
+    googleId: v.string(),
+    plan: v.string(),
+    amount: v.number(),
+    metode: v.string(),
+    pengirim: v.string(),
+    catatan: v.optional(v.string()),
+    status: v.string(),
+    createdAt: v.number(),
+  }).index("by_googleId", ["googleId"]),
+
   mealPlans: defineTable({
     userId: v.string(),
     title: v.string(),
